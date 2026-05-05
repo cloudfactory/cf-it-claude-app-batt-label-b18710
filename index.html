@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Battery Labeling — CloudFactory</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #222222;
+    --border: #2e2e2e;
+    --border-bright: #444;
+    --text: #e8e8e8;
+    --text-muted: #888;
+    --text-dim: #555;
+    --accent: #00d4a0;
+    --accent-dim: rgba(0,212,160,0.12);
+    --accent-glow: rgba(0,212,160,0.25);
+    --warn: #f5a623;
+    --warn-dim: rgba(245,166,35,0.12);
+    --error: #ff5f5f;
+    --error-dim: rgba(255,95,95,0.1);
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* ── LAYOUT ── */
+  #app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+  .logo span { color: var(--text-muted); font-weight: 400; }
+
+  .header-right {
+    display: flex; align-items: center; gap: 16px;
+  }
+
+  .user-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 3px;
+  }
+
+  .btn-ghost {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    background: none;
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-ghost:hover { border-color: var(--border-bright); color: var(--text); }
+
+  main { flex: 1; padding: 40px 32px; max-width: 900px; margin: 0 auto; width: 100%; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── LOGIN SCREEN ── */
+  #screen-login {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 56px);
+  }
+  #screen-login.active { display: flex; }
+
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 48px;
+    width: 420px;
+    text-align: center;
+  }
+
+  .login-card h2 {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .login-card p {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+
+  .google-btn {
+    width: 100%;
+    background: #fff;
+    color: #333;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 20px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.15s;
+    margin-bottom: 12px;
+  }
+  .google-btn:hover { background: #f0f0f0; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+  .or-divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 16px 0;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-family: var(--mono);
+  }
+  .or-divider::before, .or-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* ── SETUP SCREEN ── */
+  #screen-setup { padding: 20px 0; }
+
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 32px;
+    max-width: 680px;
+  }
+
+  .setup-card h2 {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .setup-card .subtitle {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+
+  .step {
+    display: flex;
+    gap: 16px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .step:last-of-type { border-bottom: none; }
+
+  .step-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-glow);
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .step-content h3 {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .step-content p {
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+
+  code {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--accent);
+  }
+
+  .code-block {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 14px;
+    color: var(--text-muted);
+    margin: 8px 0;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* ── FORM ELEMENTS ── */
+  .field-group { margin-bottom: 20px; }
+
+  label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  input[type="text"], input[type="email"], select, textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+    appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+  select option { background: var(--surface2); }
+  textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+  input::placeholder, textarea::placeholder { color: var(--text-dim); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0f0f0f;
+    border: none;
+    border-radius: 4px;
+    padding: 11px 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-secondary:hover { border-color: var(--border-bright); }
+
+  /* ── ANNOTATION SCREEN ── */
+  .annotation-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    gap: 20px;
+  }
+
+  .task-meta h2 {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-bottom: 6px;
+  }
+
+  .battery-id {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.04em;
+  }
+
+  .progress-wrap {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .progress-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .progress-bar-outer {
+    width: 180px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .progress-bar-inner {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .progress-count {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 28px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .form-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+
+  .conditional-fields {
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-glow);
+    border-radius: 4px;
+    padding: 16px;
+    margin-top: -8px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .conditional-fields.visible { display: block; }
+  .conditional-fields .field-group { margin-bottom: 16px; }
+  .conditional-fields .field-group:last-child { margin-bottom: 0; }
+
+  .conditional-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .conditional-label::before {
+    content: '↳';
+    font-size: 12px;
+  }
+
+  /* Checkbox */
+  .checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    padding: 10px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .checkbox-field:hover { border-color: var(--border-bright); }
+
+  .checkbox-field input[type="checkbox"] {
+    width: 16px; height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .checkbox-label-text {
+    font-size: 13px;
+    color: var(--text);
+    user-select: none;
+    line-height: 1.4;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    align-items: center;
+  }
+
+  .timer-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: auto;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 5px 10px;
+    border-radius: 3px;
+  }
+
+  /* ── DONE SCREEN ── */
+  #screen-done {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 56px);
+  }
+  #screen-done.active { display: flex; }
+
+  .done-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 48px;
+    max-width: 480px;
+    text-align: center;
+  }
+  .done-icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+  }
+  .done-card h2 {
+    font-family: var(--mono);
+    font-size: 18px;
+    margin-bottom: 8px;
+    color: var(--accent);
+  }
+  .done-card p { color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+
+  /* ── ADMIN SCREEN ── */
+  .admin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  .admin-header h2 {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+  }
+  .stat-card .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .stat-card .stat-value {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .stat-card .stat-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 10px 14px;
+    text-align: left;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    font-size: 13px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    letter-spacing: 0.04em;
+  }
+  .badge-green { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent-glow); }
+  .badge-yellow { background: var(--warn-dim); color: var(--warn); border: 1px solid rgba(245,166,35,0.3); }
+  .badge-gray { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.2s;
+    pointer-events: none;
+    z-index: 999;
+    max-width: 320px;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.success { border-color: var(--accent-glow); color: var(--accent); }
+  #toast.error { border-color: rgba(255,95,95,0.3); color: var(--error); }
+
+  /* ── LOADING ── */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(15,15,15,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .loading-overlay.active { display: flex; }
+  .loading-overlay p {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* ── INSTRUCTIONS PANEL ── */
+  .instructions-banner {
+    background: var(--warn-dim);
+    border: 1px solid rgba(245,166,35,0.3);
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: var(--warn);
+    line-height: 1.6;
+    font-family: var(--mono);
+  }
+
+  /* ── OVERALL PROGRESS BAR ── */
+  .big-progress {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .big-progress-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .big-progress-label { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+  .big-progress-pct { font-family: var(--mono); font-size: 22px; font-weight: 600; color: var(--accent); }
+  .big-bar-outer { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .big-bar-inner { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.6s ease; }
+
+  @media (max-width: 640px) {
+    main { padding: 24px 16px; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .annotation-header { flex-direction: column; }
+    .progress-wrap { text-align: left; }
+    .progress-bar-outer { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <div class="logo">CF<span>/</span>BATTERY-LABEL</div>
+    <div class="header-right">
+      <span class="user-badge" id="header-email" style="display:none"></span>
+      <button class="btn-ghost" id="btn-admin-toggle" style="display:none">Admin View</button>
+      <button class="btn-ghost" id="btn-logout" style="display:none">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- LOGIN -->
+    <div class="screen" id="screen-login">
+      <div class="login-card">
+        <h2>Battery Labeling</h2>
+        <p>Sign in with your Google account to begin annotating battery chemistry data for Redwood Materials.</p>
+        <button class="google-btn" id="btn-google-signin">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+          Continue with Google
+        </button>
+        <div class="or-divider">or enter email directly</div>
+        <div class="field-group">
+          <label>Email address</label>
+          <input type="email" id="input-email" placeholder="you@example.com" />
+        </div>
+        <button class="btn-primary" id="btn-email-signin" style="width:100%">Start Annotating →</button>
+      </div>
+    </div>
+
+    <!-- SETUP INSTRUCTIONS -->
+    <div class="screen" id="screen-setup">
+      <div class="setup-card">
+        <h2>One-time Setup Required</h2>
+        <p class="subtitle">Before the app can work, a Google Sheet needs to be connected as the database. This takes about 5 minutes and only needs to be done once.</p>
+
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>Create a Google Sheet</h3>
+            <p>Go to <a href="https://sheets.new" target="_blank" style="color:var(--accent)">sheets.new</a> and create a blank spreadsheet. Name it something like <strong>Battery Labeling DB</strong>.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>Enable Google Sheets API</h3>
+            <p>Go to <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent)">Google Cloud Console</a> → Create a new project → Enable the <strong>Google Sheets API</strong> and <strong>Google Drive API</strong>.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>Create OAuth Credentials</h3>
+            <p>In Cloud Console → APIs & Services → Credentials → Create OAuth 2.0 Client ID → Web Application. Add your app URL as an authorized origin. Copy the <strong>Client ID</strong>.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h3>Enter credentials below</h3>
+            <div class="field-group" style="margin-top:12px">
+              <label>Google OAuth Client ID</label>
+              <input type="text" id="input-client-id" placeholder="xxxx.apps.googleusercontent.com" />
+            </div>
+            <div class="field-group">
+              <label>Google Sheet ID</label>
+              <input type="text" id="input-sheet-id" placeholder="From the URL: /d/SHEET_ID/edit" />
+              <p style="margin-top:6px; font-size:11px; color:var(--text-dim)">Found in your spreadsheet URL between /d/ and /edit</p>
+            </div>
+            <div class="field-group">
+              <label>Admin Emails (comma-separated)</label>
+              <input type="text" id="input-admins" value="ayush.siddhi@cloudfactory.com" />
+            </div>
+            <button class="btn-primary" id="btn-save-setup">Save & Launch App</button>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <h3>Import your data</h3>
+            <p>Once set up, sign in as admin and use the <strong>Import Data</strong> button to upload your Excel file. The app will flatten all date sheets into the tasks sheet automatically.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANNOTATION -->
+    <div class="screen" id="screen-annotate">
+      <div class="annotation-header">
+        <div class="task-meta">
+          <h2>Battery Identifier</h2>
+          <div class="battery-id" id="display-battery-id">—</div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label">Your progress</div>
+          <div class="progress-bar-outer">
+            <div class="progress-bar-inner" id="user-progress-bar" style="width:0%"></div>
+          </div>
+          <div class="progress-count" id="user-progress-count">0 completed</div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="field-group">
+          <label>Label *</label>
+          <select id="field-label">
+            <option value="">— Select label —</option>
+            <option>Lithium</option>
+            <option>NiMH</option>
+            <option>NiCd</option>
+            <option>Lead</option>
+            <option>Alkaline</option>
+            <option>Zinc-Carbon</option>
+            <option>Silver</option>
+            <option>Mercury</option>
+            <option>Arsenic</option>
+            <option>Unknown</option>
+            <option>Data Error</option>
+          </select>
+        </div>
+
+        <div class="conditional-fields" id="lithium-fields">
+          <div class="conditional-label">Lithium sub-classification</div>
+          <div class="field-group">
+            <label>Lithium Sub-Label *</label>
+            <select id="field-sublabel">
+              <option value="">— Select sub-label —</option>
+              <option>Li-ion</option>
+              <option>Li Primary</option>
+              <option>Solid-state</option>
+              <option>Unknown</option>
+            </select>
+          </div>
+          <div class="conditional-fields" id="lfp-field" style="margin-top:0; margin-bottom:0;">
+            <div class="conditional-label">LFP classification</div>
+            <div class="field-group" style="margin-bottom:0">
+              <label>LFP (Lithium Iron Phosphate) *</label>
+              <select id="field-lfp">
+                <option value="">— Select —</option>
+                <option>Yes</option>
+                <option>No</option>
+                <option>Unknown</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <div class="field-group">
+          <label>Evidence *</label>
+          <textarea id="field-evidence" placeholder="Describe the evidence supporting your label. Include camera references where applicable (e.g. 'Li-ion text visible on Cam 2, 3')."></textarea>
+        </div>
+
+        <div class="field-group">
+          <label>Needs Review</label>
+          <label class="checkbox-field" for="field-needs-review">
+            <input type="checkbox" id="field-needs-review" />
+            <span class="checkbox-label-text">Flag this entry for quality review — check if you are uncertain about your label</span>
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-primary" id="btn-submit">Submit & Next →</button>
+          <button class="btn-secondary" id="btn-skip">Skip for now</button>
+          <span class="timer-badge" id="timer-display">00:00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALL DONE -->
+    <div class="screen" id="screen-done">
+      <div class="done-card">
+        <div class="done-icon">✦</div>
+        <h2>All tasks complete</h2>
+        <p>You've annotated all assigned tasks. There are no more rows in the queue right now. Check back later or contact your project manager.</p>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="screen" id="screen-admin">
+      <div class="admin-header">
+        <h2>Admin Dashboard</h2>
+        <div style="display:flex;gap:10px">
+          <input type="file" id="input-import" accept=".xlsx,.xls" style="display:none" />
+          <button class="btn-secondary" id="btn-import">↑ Import Excel</button>
+          <button class="btn-primary" id="btn-export">↓ Export to Excel</button>
+        </div>
+      </div>
+
+      <div class="big-progress" id="admin-overall-progress">
+        <div class="big-progress-top">
+          <span class="big-progress-label">Overall Completion</span>
+          <span class="big-progress-pct" id="admin-pct">0%</span>
+        </div>
+        <div class="big-bar-outer">
+          <div class="big-bar-inner" id="admin-bar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Tasks</div>
+          <div class="stat-value" id="stat-total">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Completed</div>
+          <div class="stat-value" id="stat-completed">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">In Progress</div>
+          <div class="stat-value" id="stat-inprogress">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Needs Review</div>
+          <div class="stat-value" id="stat-review">—</div>
+        </div>
+      </div>
+
+      <div class="section-title">Annotator Performance</div>
+      <div class="table-wrap">
+        <table id="annotator-table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Completed</th>
+              <th>Avg Time/Task</th>
+              <th>Last Active</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="annotator-tbody">
+            <tr><td colspan="5" style="color:var(--text-dim);text-align:center;padding:24px;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section-title">Recent Completions</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Battery ID</th>
+              <th>Label</th>
+              <th>Sub-Label</th>
+              <th>LFP</th>
+              <th>Needs Review</th>
+              <th>Annotator</th>
+              <th>Time Taken</th>
+            </tr>
+          </thead>
+          <tbody id="recent-tbody">
+            <tr><td colspan="7" style="color:var(--text-dim);text-align:center;padding:24px;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <p id="loading-text">Loading...</p>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIG — loaded from localStorage after setup
+// ═══════════════════════════════════════════════
+let CONFIG = {
+  CLIENT_ID: '',
+  SHEET_ID: '',
+  ADMIN_EMAILS: ['ayush.siddhi@cloudfactory.com'],
+  SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file'
+};
+
+// Sheet tab names
+const SHEETS = { TASKS: 'tasks', ANNOTATORS: 'annotators' };
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let state = {
+  user: null,           // { email, name }
+  currentTask: null,    // { rowIndex, batteryId }
+  taskStartTime: null,
+  timerInterval: null,
+  isAdmin: false,
+  accessToken: null
+};
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className = '', 3000);
+}
+
+function setLoading(show, text = 'Loading...') {
+  const el = document.getElementById('loading-overlay');
+  document.getElementById('loading-text').textContent = text;
+  el.classList.toggle('active', show);
+}
+
+function formatSeconds(s) {
+  if (!s || s < 0) return '—';
+  const m = Math.floor(s / 60), sec = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(Math.floor(sec)).padStart(2,'0')}`;
+}
+
+function loadConfig() {
+  const saved = localStorage.getItem('cf_battery_config');
+  if (saved) {
+    try { CONFIG = { ...CONFIG, ...JSON.parse(saved) }; return true; } catch(e) {}
+  }
+  return false;
+}
+
+function saveConfig() {
+  localStorage.setItem('cf_battery_config', JSON.stringify({
+    CLIENT_ID: CONFIG.CLIENT_ID,
+    SHEET_ID: CONFIG.SHEET_ID,
+    ADMIN_EMAILS: CONFIG.ADMIN_EMAILS
+  }));
+}
+
+// ═══════════════════════════════════════════════
+// GOOGLE SHEETS API
+// ═══════════════════════════════════════════════
+async function sheetsGet(range) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}`;
+  const res = await fetch(url, { headers: { Authorization: 'Bearer ' + state.accessToken } });
+  if (!res.ok) throw new Error('Sheets GET failed: ' + res.status);
+  return res.json();
+}
+
+async function sheetsAppend(range, values) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values })
+  });
+  if (!res.ok) throw new Error('Sheets APPEND failed: ' + res.status);
+  return res.json();
+}
+
+async function sheetsUpdate(range, values) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values })
+  });
+  if (!res.ok) throw new Error('Sheets UPDATE failed: ' + res.status);
+  return res.json();
+}
+
+async function sheetsBatchUpdate(requests) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}:batchUpdate`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requests })
+  });
+  if (!res.ok) throw new Error('Sheets BATCH UPDATE failed: ' + res.status);
+  return res.json();
+}
+
+// Ensure sheets exist
+async function ensureSheets() {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}`;
+  const res = await fetch(url, { headers: { Authorization: 'Bearer ' + state.accessToken } });
+  const data = await res.json();
+  const existingNames = data.sheets.map(s => s.properties.title);
+
+  const toCreate = [];
+  if (!existingNames.includes(SHEETS.TASKS)) toCreate.push({ addSheet: { properties: { title: SHEETS.TASKS } } });
+  if (!existingNames.includes(SHEETS.ANNOTATORS)) toCreate.push({ addSheet: { properties: { title: SHEETS.ANNOTATORS } } });
+
+  if (toCreate.length) {
+    await sheetsBatchUpdate(toCreate);
+    // Add headers
+    if (!existingNames.includes(SHEETS.TASKS)) {
+      await sheetsUpdate(`${SHEETS.TASKS}!A1`, [[
+        'battery_id', 'label', 'sublabel', 'lfp', 'evidence', 'needs_review',
+        'assigned_to', 'status', 'assigned_at', 'submitted_at', 'time_taken_seconds', 'source_sheet'
+      ]]);
+    }
+    if (!existingNames.includes(SHEETS.ANNOTATORS)) {
+      await sheetsUpdate(`${SHEETS.ANNOTATORS}!A1`, [['email', 'completed', 'total_time_seconds', 'last_active']]);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// TASK ASSIGNMENT
+// ═══════════════════════════════════════════════
+async function getOrAssignTask(email) {
+  const data = await sheetsGet(`${SHEETS.TASKS}!A:L`);
+  const rows = data.values || [];
+  if (rows.length < 2) return null; // no data
+
+  // Check if user already has an in-progress task
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (r[6] === email && r[7] === 'in-progress') {
+      return { rowIndex: i + 1, batteryId: r[0] }; // 1-indexed sheet row
+    }
+  }
+
+  // Find next unassigned row
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[7] || r[7] === 'unassigned') {
+      // Lock it
+      const rowNum = i + 1;
+      await sheetsUpdate(`${SHEETS.TASKS}!G${rowNum}:I${rowNum}`, [[
+        email, 'in-progress', new Date().toISOString()
+      ]]);
+      return { rowIndex: rowNum, batteryId: r[0] };
+    }
+  }
+  return null; // queue empty
+}
+
+async function submitTask(rowIndex, fields, timeTaken) {
+  await sheetsUpdate(`${SHEETS.TASKS}!B${rowIndex}:K${rowIndex}`, [[
+    fields.label,
+    fields.sublabel || '',
+    fields.lfp || '',
+    fields.evidence,
+    fields.needs_review ? 'Yes' : '',
+    state.user.email,
+    'complete',
+    '', // assigned_at stays
+    new Date().toISOString(),
+    timeTaken
+  ]]);
+
+  // Upsert annotator record
+  await updateAnnotatorRecord(state.user.email, timeTaken);
+}
+
+async function updateAnnotatorRecord(email, timeTaken) {
+  const data = await sheetsGet(`${SHEETS.ANNOTATORS}!A:D`);
+  const rows = data.values || [];
+  let found = -1;
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] === email) { found = i + 1; break; }
+  }
+
+  const now = new Date().toISOString();
+  if (found === -1) {
+    await sheetsAppend(`${SHEETS.ANNOTATORS}!A:D`, [[email, 1, timeTaken, now]]);
+  } else {
+    const prev = rows[found - 1];
+    const newCompleted = (parseInt(prev[1]) || 0) + 1;
+    const newTime = (parseInt(prev[2]) || 0) + timeTaken;
+    await sheetsUpdate(`${SHEETS.ANNOTATORS}!A${found}:D${found}`, [[email, newCompleted, newTime, now]]);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════════════
+function startTimer() {
+  state.taskStartTime = Date.now();
+  clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - state.taskStartTime) / 1000);
+    document.getElementById('timer-display').textContent = formatSeconds(elapsed);
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(state.timerInterval);
+  return state.taskStartTime ? Math.floor((Date.now() - state.taskStartTime) / 1000) : 0;
+}
+
+// ═══════════════════════════════════════════════
+// ANNOTATION FLOW
+// ═══════════════════════════════════════════════
+async function loadNextTask() {
+  setLoading(true, 'Fetching next task...');
+  try {
+    const task = await getOrAssignTask(state.user.email);
+    if (!task) {
+      setLoading(false);
+      showScreen('done');
+      return;
+    }
+    state.currentTask = task;
+    document.getElementById('display-battery-id').textContent = task.batteryId;
+
+    // Reset form
+    document.getElementById('field-label').value = '';
+    document.getElementById('field-sublabel').value = '';
+    document.getElementById('field-lfp').value = '';
+    document.getElementById('field-evidence').value = '';
+    document.getElementById('field-needs-review').checked = false;
+    document.getElementById('lithium-fields').classList.remove('visible');
+    document.getElementById('lfp-field').classList.remove('visible');
+
+    // Update user progress
+    await updateUserProgress();
+
+    startTimer();
+    showScreen('annotate');
+  } catch(e) {
+    showToast('Error loading task: ' + e.message, 'error');
+    console.error(e);
+  }
+  setLoading(false);
+}
+
+async function updateUserProgress() {
+  try {
+    const data = await sheetsGet(`${SHEETS.TASKS}!G:H`);
+    const rows = (data.values || []).slice(1);
+    const mine = rows.filter(r => r[0] === state.user.email);
+    const done = mine.filter(r => r[1] === 'complete').length;
+    const total = mine.length;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    document.getElementById('user-progress-bar').style.width = pct + '%';
+    document.getElementById('user-progress-count').textContent = `${done} completed`;
+  } catch(e) {}
+}
+
+async function handleSubmit() {
+  const label = document.getElementById('field-label').value;
+  const evidence = document.getElementById('field-evidence').value.trim();
+
+  if (!label) { showToast('Please select a label', 'error'); return; }
+  if (!evidence) { showToast('Evidence is required', 'error'); return; }
+
+  if (label === 'Lithium') {
+    const sublabel = document.getElementById('field-sublabel').value;
+    if (!sublabel) { showToast('Please select a Lithium sub-label', 'error'); return; }
+    if ((sublabel === 'Li-ion' || sublabel === 'Solid-state') && !document.getElementById('field-lfp').value) {
+      showToast('Please select an LFP value', 'error'); return;
+    }
+  }
+
+  const timeTaken = stopTimer();
+  setLoading(true, 'Saving annotation...');
+
+  try {
+    await submitTask(state.currentTask.rowIndex, {
+      label,
+      sublabel: document.getElementById('field-sublabel').value,
+      lfp: document.getElementById('field-lfp').value,
+      evidence,
+      needs_review: document.getElementById('field-needs-review').checked
+    }, timeTaken);
+
+    showToast('Saved! Loading next task...');
+    await loadNextTask();
+  } catch(e) {
+    showToast('Error saving: ' + e.message, 'error');
+    console.error(e);
+  }
+  setLoading(false);
+}
+
+// Skip — release the lock, move to next
+async function handleSkip() {
+  if (!state.currentTask) return;
+  stopTimer();
+  setLoading(true, 'Skipping...');
+  try {
+    await sheetsUpdate(`${SHEETS.TASKS}!G${state.currentTask.rowIndex}:I${state.currentTask.rowIndex}`, [['', 'unassigned', '']]);
+    await loadNextTask();
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+  setLoading(false);
+}
+
+// ═══════════════════════════════════════════════
+// ADMIN
+// ═══════════════════════════════════════════════
+async function loadAdminDashboard() {
+  setLoading(true, 'Loading dashboard...');
+  try {
+    const [tasksData, annotatorsData] = await Promise.all([
+      sheetsGet(`${SHEETS.TASKS}!A:L`),
+      sheetsGet(`${SHEETS.ANNOTATORS}!A:D`)
+    ]);
+
+    const tasks = (tasksData.values || []).slice(1);
+    const annotators = (annotatorsData.values || []).slice(1);
+
+    const total = tasks.length;
+    const completed = tasks.filter(r => r[7] === 'complete').length;
+    const inprogress = tasks.filter(r => r[7] === 'in-progress').length;
+    const needsReview = tasks.filter(r => r[5] === 'Yes').length;
+    const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    document.getElementById('stat-total').textContent = total.toLocaleString();
+    document.getElementById('stat-completed').textContent = completed.toLocaleString();
+    document.getElementById('stat-inprogress').textContent = inprogress.toLocaleString();
+    document.getElementById('stat-review').textContent = needsReview.toLocaleString();
+    document.getElementById('admin-pct').textContent = pct + '%';
+    document.getElementById('admin-bar').style.width = pct + '%';
+
+    // Annotator table
+    const tbody = document.getElementById('annotator-tbody');
+    if (annotators.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim);text-align:center;padding:24px;">No annotators yet</td></tr>';
+    } else {
+      tbody.innerHTML = annotators.map(r => {
+        const completed = parseInt(r[1]) || 0;
+        const totalTime = parseInt(r[2]) || 0;
+        const avgTime = completed > 0 ? Math.round(totalTime / completed) : 0;
+        const lastActive = r[3] ? new Date(r[3]).toLocaleString() : '—';
+        const now = Date.now();
+        const lastTs = r[3] ? new Date(r[3]).getTime() : 0;
+        const isActive = (now - lastTs) < 15 * 60 * 1000; // active in last 15 min
+        return `<tr>
+          <td style="font-family:var(--mono);font-size:12px">${r[0]}</td>
+          <td><strong>${completed}</strong></td>
+          <td>${formatSeconds(avgTime)}</td>
+          <td style="font-size:12px;color:var(--text-muted)">${lastActive}</td>
+          <td><span class="badge ${isActive ? 'badge-green' : 'badge-gray'}">${isActive ? 'active' : 'idle'}</span></td>
+        </tr>`;
+      }).join('');
+    }
+
+    // Recent completions
+    const recent = tasks.filter(r => r[7] === 'complete').slice(-20).reverse();
+    const rtbody = document.getElementById('recent-tbody');
+    if (recent.length === 0) {
+      rtbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-dim);text-align:center;padding:24px;">No completions yet</td></tr>';
+    } else {
+      rtbody.innerHTML = recent.map(r => `<tr>
+        <td style="font-family:var(--mono);font-size:12px">${r[0]}</td>
+        <td>${r[1] || '—'}</td>
+        <td>${r[2] || '—'}</td>
+        <td>${r[3] || '—'}</td>
+        <td>${r[5] === 'Yes' ? '<span class="badge badge-yellow">Yes</span>' : '<span class="badge badge-gray">No</span>'}</td>
+        <td style="font-size:12px;color:var(--text-muted)">${r[6] || '—'}</td>
+        <td style="font-family:var(--mono);font-size:12px">${formatSeconds(parseInt(r[10]))}</td>
+      </tr>`).join('');
+    }
+
+  } catch(e) {
+    showToast('Error loading dashboard: ' + e.message, 'error');
+    console.error(e);
+  }
+  setLoading(false);
+}
+
+// Export
+async function exportToExcel() {
+  setLoading(true, 'Exporting data...');
+  try {
+    const data = await sheetsGet(`${SHEETS.TASKS}!A:L`);
+    const rows = data.values || [];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Annotations');
+    XLSX.writeFile(wb, `battery_annotations_${new Date().toISOString().slice(0,10)}.xlsx`);
+    showToast('Export complete!');
+  } catch(e) {
+    showToast('Export failed: ' + e.message, 'error');
+  }
+  setLoading(false);
+}
+
+// Import Excel
+async function importExcel(file) {
+  setLoading(true, 'Importing data...');
+  try {
+    const ab = await file.arrayBuffer();
+    const wb = XLSX.read(ab);
+    const skip = ['Overall', 'Helper', 'Label Template'];
+    let allRows = [];
+    for (const sheetName of wb.SheetNames) {
+      if (skip.some(s => sheetName.toLowerCase().includes(s.toLowerCase()))) continue;
+      const ws = wb.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (rows.length < 2) continue;
+      // Skip header row, take battery IDs from column A
+      for (let i = 1; i < rows.length; i++) {
+        const batteryId = rows[i][0];
+        if (batteryId && String(batteryId).trim()) {
+          allRows.push([String(batteryId).trim(), '', '', '', '', '', '', 'unassigned', '', '', '', sheetName]);
+        }
+      }
+    }
+
+    if (allRows.length === 0) { showToast('No data rows found', 'error'); setLoading(false); return; }
+
+    // Write header + all rows
+    const header = [['battery_id','label','sublabel','lfp','evidence','needs_review','assigned_to','status','assigned_at','submitted_at','time_taken_seconds','source_sheet']];
+    await sheetsUpdate(`${SHEETS.TASKS}!A1`, header);
+    await sheetsAppend(`${SHEETS.TASKS}!A:L`, allRows);
+    showToast(`Imported ${allRows.length} rows from ${wb.SheetNames.length - skip.length} sheets`);
+    await loadAdminDashboard();
+  } catch(e) {
+    showToast('Import failed: ' + e.message, 'error');
+    console.error(e);
+  }
+  setLoading(false);
+}
+
+// ═══════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════
+function initGoogleAuth() {
+  if (!CONFIG.CLIENT_ID) return;
+  try {
+    google.accounts.id.initialize({
+      client_id: CONFIG.CLIENT_ID,
+      callback: handleGoogleCredential
+    });
+  } catch(e) {}
+}
+
+function handleGoogleCredential(response) {
+  // Decode JWT
+  const payload = JSON.parse(atob(response.credential.split('.')[1]));
+  signInUser(payload.email, payload.name);
+}
+
+async function signInWithOAuth() {
+  if (!CONFIG.CLIENT_ID) { showToast('Setup required first', 'error'); return; }
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: CONFIG.CLIENT_ID,
+    scope: CONFIG.SCOPES,
+    callback: async (resp) => {
+      if (resp.error) { showToast('Auth error: ' + resp.error, 'error'); return; }
+      state.accessToken = resp.access_token;
+      // Get user info
+      const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: 'Bearer ' + resp.access_token }
+      });
+      const info = await res.json();
+      await signInUser(info.email, info.name);
+    }
+  });
+  client.requestAccessToken();
+}
+
+async function signInWithEmail(email) {
+  // Email-only mode — no real auth, just use as identifier
+  // For real deployments, pair with OAuth above
+  await signInUser(email, email.split('@')[0]);
+}
+
+async function signInUser(email, name) {
+  state.user = { email, name };
+  state.isAdmin = CONFIG.ADMIN_EMAILS.includes(email);
+
+  document.getElementById('header-email').textContent = email;
+  document.getElementById('header-email').style.display = '';
+  document.getElementById('btn-logout').style.display = '';
+
+  if (state.isAdmin) {
+    document.getElementById('btn-admin-toggle').style.display = '';
+  }
+
+  if (!state.accessToken) {
+    // Prompt for OAuth if not already done
+    await signInWithOAuth();
+    return;
+  }
+
+  await ensureSheets();
+
+  if (state.isAdmin) {
+    await loadAdminDashboard();
+    showScreen('admin');
+  } else {
+    await loadNextTask();
+  }
+}
+
+function signOut() {
+  state.user = null;
+  state.accessToken = null;
+  state.currentTask = null;
+  stopTimer();
+  document.getElementById('header-email').style.display = 'none';
+  document.getElementById('btn-logout').style.display = 'none';
+  document.getElementById('btn-admin-toggle').style.display = 'none';
+  showScreen('login');
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  const configured = loadConfig();
+
+  if (!configured || !CONFIG.CLIENT_ID || !CONFIG.SHEET_ID) {
+    showScreen('setup');
+  } else {
+    initGoogleAuth();
+    showScreen('login');
+  }
+
+  // Setup save
+  document.getElementById('btn-save-setup').addEventListener('click', () => {
+    const cid = document.getElementById('input-client-id').value.trim();
+    const sid = document.getElementById('input-sheet-id').value.trim();
+    const admins = document.getElementById('input-admins').value.split(',').map(e => e.trim()).filter(Boolean);
+    if (!cid || !sid) { showToast('Client ID and Sheet ID are required', 'error'); return; }
+    CONFIG.CLIENT_ID = cid;
+    CONFIG.SHEET_ID = sid;
+    CONFIG.ADMIN_EMAILS = admins;
+    saveConfig();
+    initGoogleAuth();
+    showScreen('login');
+    showToast('Configuration saved!');
+  });
+
+  // Login
+  document.getElementById('btn-google-signin').addEventListener('click', signInWithOAuth);
+  document.getElementById('btn-email-signin').addEventListener('click', () => {
+    const email = document.getElementById('input-email').value.trim();
+    if (!email || !email.includes('@')) { showToast('Please enter a valid email', 'error'); return; }
+    signInWithOAuth(); // Still need OAuth for Sheets access
+  });
+
+  // Logout
+  document.getElementById('btn-logout').addEventListener('click', signOut);
+
+  // Admin toggle
+  document.getElementById('btn-admin-toggle').addEventListener('click', () => {
+    const adminScreen = document.getElementById('screen-admin');
+    const isOnAdmin = adminScreen.classList.contains('active');
+    if (isOnAdmin) {
+      loadNextTask();
+    } else {
+      loadAdminDashboard();
+      showScreen('admin');
+    }
+  });
+
+  // Form conditional logic
+  document.getElementById('field-label').addEventListener('change', (e) => {
+    const isLithium = e.target.value === 'Lithium';
+    document.getElementById('lithium-fields').classList.toggle('visible', isLithium);
+    if (!isLithium) {
+      document.getElementById('field-sublabel').value = '';
+      document.getElementById('field-lfp').value = '';
+      document.getElementById('lfp-field').classList.remove('visible');
+    }
+  });
+
+  document.getElementById('field-sublabel').addEventListener('change', (e) => {
+    const showLFP = e.target.value === 'Li-ion' || e.target.value === 'Solid-state';
+    document.getElementById('lfp-field').classList.toggle('visible', showLFP);
+    if (!showLFP) document.getElementById('field-lfp').value = '';
+  });
+
+  // Submit / skip
+  document.getElementById('btn-submit').addEventListener('click', handleSubmit);
+  document.getElementById('btn-skip').addEventListener('click', handleSkip);
+
+  // Admin actions
+  document.getElementById('btn-export').addEventListener('click', exportToExcel);
+  document.getElementById('btn-import').addEventListener('click', () => {
+    document.getElementById('input-import').click();
+  });
+  document.getElementById('input-import').addEventListener('change', (e) => {
+    if (e.target.files[0]) importExcel(e.target.files[0]);
+  });
+});
+</script>
+</body>
+</html>
