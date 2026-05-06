@@ -1489,77 +1489,32 @@ async function importExcel(file) {
 // AUTH
 // ═══════════════════════════════════════════════
 function initGoogleAuth() {
-  if (!CONFIG.CLIENT_ID) return;
-  try {
-    google.accounts.id.initialize({
-      client_id: CONFIG.CLIENT_ID,
-      callback: handleGoogleCredential
-    });
-  } catch(e) {}
-}
-
-function handleGoogleCredential(response) {
-  // Decode JWT
-  const payload = JSON.parse(atob(response.credential.split('.')[1]));
-  signInUser(payload.email, payload.name);
+  // One Tap removed — using token client popup flow instead
 }
 
 async function signInWithOAuth() {
   if (!CONFIG.CLIENT_ID) { showToast('Setup required first', 'error'); return; }
 
-  // Use Sign In With Google (id_token) to get email reliably, then get access token for Sheets
-  google.accounts.id.initialize({
+  // Use token client popup directly — skip One Tap entirely (deprecated with FedCM)
+  const tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CONFIG.CLIENT_ID,
-    callback: async (credentialResponse) => {
-      // Decode email from JWT id_token — no extra API call needed
-      const payload = JSON.parse(atob(credentialResponse.credential.split('.')[1]));
-      const email = payload.email;
-      const name = payload.name || email;
-
-      // Now get an access token for Sheets API
-      const tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CONFIG.CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
-        hint: email,
-        callback: async (resp) => {
-          if (resp.error) { showToast('Auth error: ' + resp.error, 'error'); return; }
-          state.accessToken = resp.access_token;
-          await signInUser(email, name);
-        }
-      });
-      tokenClient.requestAccessToken({ prompt: '' });
+    scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+    callback: async (resp) => {
+      if (resp.error) { showToast('Auth error: ' + resp.error, 'error'); return; }
+      state.accessToken = resp.access_token;
+      try {
+        const res = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+          headers: { Authorization: 'Bearer ' + resp.access_token }
+        });
+        const info = await res.json();
+        await signInUser(info.email, info.name);
+      } catch(e) {
+        console.error('Userinfo error:', e);
+        showToast('Could not get user info — please try again', 'error');
+      }
     }
   });
-
-  google.accounts.id.prompt((notification) => {
-    console.log('Prompt notification:', notification.getNotDisplayedReason(), notification.getSkippedReason(), notification.getDismissedReason());
-    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-      console.log('One Tap not shown, falling back to popup');
-      // Fallback to token client popup directly
-      const tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CONFIG.CLIENT_ID,
-        scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
-        callback: async (resp) => {
-          console.log('Token response:', resp);
-          if (resp.error) { showToast('Auth error: ' + resp.error, 'error'); return; }
-          state.accessToken = resp.access_token;
-          // Decode email from access token via userinfo
-          try {
-            const res = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
-              headers: { Authorization: 'Bearer ' + resp.access_token }
-            });
-            const info = await res.json();
-            console.log('User info:', info);
-            await signInUser(info.email, info.name);
-          } catch(e) {
-            console.error('Userinfo error:', e);
-            showToast('Could not get user info', 'error');
-          }
-        }
-      });
-      tokenClient.requestAccessToken({ prompt: 'select_account' });
-    }
-  });
+  tokenClient.requestAccessToken({ prompt: 'select_account' });
 }
 
 async function signInWithEmail(email) {
