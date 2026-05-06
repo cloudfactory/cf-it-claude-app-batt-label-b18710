@@ -1532,12 +1532,32 @@ async function signInWithOAuth() {
   });
 
   google.accounts.id.prompt((notification) => {
+    console.log('Prompt notification:', notification.getNotDisplayedReason(), notification.getSkippedReason(), notification.getDismissedReason());
     if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-      // Fallback: show Google One Tap didn't show, use button flow
-      google.accounts.id.renderButton(
-        document.getElementById('btn-google-signin').parentElement,
-        { theme: 'outline', size: 'large', width: 340 }
-      );
+      console.log('One Tap not shown, falling back to popup');
+      // Fallback to token client popup directly
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CONFIG.CLIENT_ID,
+        scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+        callback: async (resp) => {
+          console.log('Token response:', resp);
+          if (resp.error) { showToast('Auth error: ' + resp.error, 'error'); return; }
+          state.accessToken = resp.access_token;
+          // Decode email from access token via userinfo
+          try {
+            const res = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+              headers: { Authorization: 'Bearer ' + resp.access_token }
+            });
+            const info = await res.json();
+            console.log('User info:', info);
+            await signInUser(info.email, info.name);
+          } catch(e) {
+            console.error('Userinfo error:', e);
+            showToast('Could not get user info', 'error');
+          }
+        }
+      });
+      tokenClient.requestAccessToken({ prompt: 'select_account' });
     }
   });
 }
