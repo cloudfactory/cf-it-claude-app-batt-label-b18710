@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Battery Chemistry Assessment — CloudFactory</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #222222;
+    --border: #2e2e2e;
+    --border-bright: #444;
+    --text: #e8e8e8;
+    --text-muted: #888;
+    --text-dim: #555;
+    --accent: #7c6af7;
+    --accent-dim: rgba(124,106,247,0.12);
+    --accent-glow: rgba(124,106,247,0.25);
+    --green: #00d4a0;
+    --green-dim: rgba(0,212,160,0.12);
+    --red: #ff5f5f;
+    --red-dim: rgba(255,95,95,0.1);
+    --warn: #f5a623;
+    --warn-dim: rgba(245,166,35,0.12);
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; min-height: 100vh; }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .logo { font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: var(--accent); }
+  .logo span { color: var(--text-muted); font-weight: 400; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .user-badge { font-family: var(--mono); font-size: 11px; color: var(--text-muted); background: var(--surface2); border: 1px solid var(--border); padding: 4px 10px; border-radius: 3px; display: none; }
+  .btn-ghost { font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em; color: var(--text-muted); background: none; border: 1px solid var(--border); padding: 5px 12px; border-radius: 3px; cursor: pointer; transition: all 0.15s; display: none; }
+  .btn-ghost:hover { border-color: var(--border-bright); color: var(--text); }
+
+  main { flex: 1; padding: 40px 32px; max-width: 860px; margin: 0 auto; width: 100%; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* LOGIN */
+  #screen-login { display: none; align-items: center; justify-content: center; min-height: calc(100vh - 56px); }
+  #screen-login.active { display: flex; }
+
+  .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 48px; width: 420px; text-align: center; }
+  .login-card .tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; background: var(--accent-dim); border: 1px solid var(--accent-glow); padding: 3px 10px; border-radius: 2px; display: inline-block; margin-bottom: 16px; }
+  .login-card h2 { font-family: var(--mono); font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .login-card p { color: var(--text-muted); font-size: 13px; margin-bottom: 28px; line-height: 1.6; }
+
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 28px; }
+  .info-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; text-align: left; }
+  .info-item .info-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 3px; }
+  .info-item .info-value { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text); }
+
+  .google-btn { width: 100%; background: #fff; color: #333; border: none; border-radius: 4px; padding: 12px 20px; font-family: var(--sans); font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.15s; }
+  .google-btn:hover { background: #f0f0f0; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+  /* ALREADY DONE */
+  #screen-done { display: none; align-items: center; justify-content: center; min-height: calc(100vh - 56px); }
+  #screen-done.active { display: flex; }
+  .done-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 48px; max-width: 480px; text-align: center; }
+  .done-icon { font-size: 40px; margin-bottom: 16px; }
+  .done-card h2 { font-family: var(--mono); font-size: 18px; margin-bottom: 8px; color: var(--accent); }
+  .done-card p { color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+
+  /* ASSESSMENT */
+  .assessment-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; gap: 20px; }
+  .task-meta h2 { font-family: var(--mono); font-size: 12px; color: var(--text-muted); font-weight: 400; margin-bottom: 6px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .battery-id { font-family: var(--mono); font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: 0.04em; }
+
+  .progress-wrap { text-align: right; flex-shrink: 0; }
+  .progress-label { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+  .progress-bar-outer { width: 180px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+  .progress-bar-inner { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
+  .progress-count { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+
+  .task-counter { font-family: var(--mono); font-size: 11px; color: var(--text-muted); background: var(--surface2); border: 1px solid var(--border); padding: 4px 10px; border-radius: 3px; margin-bottom: 16px; display: inline-block; }
+
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 28px; }
+
+  .field-group { margin-bottom: 20px; }
+  label { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+  input[type="text"], select, textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-family: var(--sans); font-size: 14px; padding: 10px 12px; outline: none; transition: border-color 0.15s; appearance: none; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+  select option { background: var(--surface2); }
+  textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+  textarea::placeholder { color: var(--text-dim); }
+
+  .conditional-fields { background: var(--accent-dim); border: 1px solid var(--accent-glow); border-radius: 4px; padding: 16px; margin-top: -8px; margin-bottom: 20px; display: none; }
+  .conditional-fields.visible { display: block; }
+  .conditional-fields .field-group { margin-bottom: 16px; }
+  .conditional-fields .field-group:last-child { margin-bottom: 0; }
+  .conditional-label { font-family: var(--mono); font-size: 10px; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .conditional-label::before { content: '↳'; font-size: 12px; }
+
+  .checkbox-field { display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; transition: all 0.15s; }
+  .checkbox-field:hover { border-color: var(--border-bright); }
+  .checkbox-field input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+  .checkbox-label-text { font-size: 13px; color: var(--text); user-select: none; line-height: 1.4; }
+
+  .form-divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  .btn-primary { background: var(--accent); color: #fff; border: none; border-radius: 4px; padding: 11px 24px; font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s; text-transform: uppercase; }
+  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .form-actions { display: flex; gap: 12px; margin-top: 24px; align-items: center; }
+  .timer-badge { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-left: auto; background: var(--surface2); border: 1px solid var(--border); padding: 5px 10px; border-radius: 3px; }
+
+  /* RESULTS SCREEN */
+  #screen-results { display: none; align-items: flex-start; justify-content: center; min-height: calc(100vh - 56px); padding: 40px 0; }
+  #screen-results.active { display: flex; }
+
+  .results-wrap { width: 100%; max-width: 760px; }
+
+  .score-hero { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 40px; text-align: center; margin-bottom: 24px; position: relative; overflow: hidden; }
+  .score-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, var(--accent-dim) 0%, transparent 70%); pointer-events: none; }
+  .score-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; }
+  .score-number { font-family: var(--mono); font-size: 72px; font-weight: 600; line-height: 1; color: var(--text); margin-bottom: 4px; }
+  .score-number span { color: var(--accent); }
+  .score-sub { font-family: var(--mono); font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .score-bar-outer { width: 100%; max-width: 320px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin: 0 auto; }
+  .score-bar-inner { height: 100%; border-radius: 3px; transition: width 1s ease; }
+
+  .results-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  .result-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 16px; text-align: center; }
+  .result-stat .rs-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .result-stat .rs-value { font-family: var(--mono); font-size: 24px; font-weight: 600; }
+  .rs-value.green { color: var(--green); }
+  .rs-value.red { color: var(--red); }
+  .rs-value.warn { color: var(--warn); }
+
+  .section-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+  .breakdown-table { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 24px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); padding: 10px 14px; text-align: left; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  td { font-size: 13px; padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .badge { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 2px; letter-spacing: 0.04em; }
+  .badge-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,212,160,0.3); }
+  .badge-red { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,95,95,0.3); }
+  .badge-yellow { background: var(--warn-dim); color: var(--warn); border: 1px solid rgba(245,166,35,0.3); }
+  .badge-gray { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+
+  .pts-cell { font-family: var(--mono); font-size: 12px; font-weight: 600; }
+
+  /* ADMIN */
+  .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  .admin-header h2 { font-family: var(--mono); font-size: 18px; font-weight: 600; }
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 20px; }
+  .stat-card .stat-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .stat-card .stat-value { font-family: var(--mono); font-size: 28px; font-weight: 600; color: var(--accent); line-height: 1; }
+
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 28px; }
+
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 12px 18px; font-family: var(--mono); font-size: 12px; color: var(--text); opacity: 0; transform: translateY(8px); transition: all 0.2s; pointer-events: none; z-index: 999; }
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.success { border-color: rgba(124,106,247,0.4); color: var(--accent); }
+  #toast.error { border-color: rgba(255,95,95,0.3); color: var(--red); }
+
+  .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(15,15,15,0.7); z-index: 200; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+  .loading-overlay.active { display: flex; }
+  .loading-overlay p { font-family: var(--mono); font-size: 13px; color: var(--text-muted); }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="app" style="display:flex;flex-direction:column;min-height:100vh">
+  <header>
+    <div class="logo">CF<span>/</span>ASSESS</div>
+    <div class="header-right">
+      <span class="user-badge" id="header-email"></span>
+      <button class="btn-ghost" id="btn-admin-toggle">Admin View</button>
+      <button class="btn-ghost" id="btn-logout">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- LOGIN -->
+    <div class="screen" id="screen-login">
+      <div class="login-card">
+        <div class="tag">Assessment</div>
+        <h2>Battery Chemistry</h2>
+        <p>Sign in to begin your 15-task assessment. You have one attempt — take your time.</p>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Tasks</div>
+            <div class="info-value">15</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Attempts</div>
+            <div class="info-value">1 only</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Scoring</div>
+            <div class="info-value">100 pts each</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Results</div>
+            <div class="info-value">Instant</div>
+          </div>
+        </div>
+        <button class="google-btn" id="btn-google-signin">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+          Continue with Google
+        </button>
+        <p style="color:var(--text-dim);font-size:11px;margin-top:16px;font-family:var(--mono);">Sign in with your @es.cloudfactory.com Google account.</p>
+      </div>
+    </div>
+
+    <!-- ALREADY COMPLETED -->
+    <div class="screen" id="screen-done">
+      <div class="done-card">
+        <div class="done-icon">◎</div>
+        <h2>Already completed</h2>
+        <p>You've already submitted this assessment. Only one attempt is allowed. Contact your project manager if you think this is an error.</p>
+      </div>
+    </div>
+
+    <!-- ASSESSMENT -->
+    <div class="screen" id="screen-assess">
+      <div class="assessment-header">
+        <div class="task-meta">
+          <h2>Battery Identifier</h2>
+          <div class="battery-id" id="display-battery-id">—</div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label">Progress</div>
+          <div class="progress-bar-outer">
+            <div class="progress-bar-inner" id="progress-bar" style="width:0%"></div>
+          </div>
+          <div class="progress-count" id="progress-count">Task 1 of 15</div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="field-group">
+          <label>Label *</label>
+          <select id="field-label">
+            <option value="">— Select label —</option>
+            <option>Lithium</option>
+            <option>NiMH</option>
+            <option>NiCd</option>
+            <option>Lead</option>
+            <option>Alkaline</option>
+            <option>Zinc-Carbon</option>
+            <option>Silver</option>
+            <option>Mercury</option>
+            <option>Arsenic</option>
+            <option>Unknown</option>
+            <option>Data Error</option>
+          </select>
+        </div>
+
+        <div class="conditional-fields" id="lithium-fields">
+          <div class="conditional-label">Lithium sub-classification</div>
+          <div class="field-group">
+            <label>Lithium Sub-Label *</label>
+            <select id="field-sublabel">
+              <option value="">— Select sub-label —</option>
+              <option>Li-ion</option>
+              <option>Li Primary</option>
+              <option>Solid-state</option>
+              <option>Unknown</option>
+            </select>
+          </div>
+          <div class="conditional-fields" id="lfp-field" style="margin-top:0;margin-bottom:0;">
+            <div class="conditional-label">LFP classification</div>
+            <div class="field-group" style="margin-bottom:0">
+              <label>LFP (Lithium Iron Phosphate) *</label>
+              <select id="field-lfp">
+                <option value="">— Select —</option>
+                <option>Yes</option>
+                <option>No</option>
+                <option>Unknown</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <div class="field-group">
+          <label>Evidence *</label>
+          <textarea id="field-evidence" placeholder="Describe the evidence supporting your label."></textarea>
+        </div>
+
+        <div class="field-group">
+          <label>Evidence URL <span style="color:var(--text-dim);font-size:10px;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <textarea id="field-evidence-url" placeholder="https://..." style="min-height:50px;font-family:var(--mono);font-size:12px;"></textarea>
+        </div>
+
+        <div class="field-group">
+          <label>Text / Logo Visible</label>
+          <label class="checkbox-field" for="field-visible">
+            <input type="checkbox" id="field-visible" />
+            <span class="checkbox-label-text">The battery type text or logo is clearly visible in the image</span>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <label>Needs Review</label>
+          <label class="checkbox-field" for="field-needs-review">
+            <input type="checkbox" id="field-needs-review" />
+            <span class="checkbox-label-text">Flag this entry for quality review</span>
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-primary" id="btn-next">Next Task →</button>
+          <span class="timer-badge" id="timer-display">00:00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="screen" id="screen-results">
+      <div class="results-wrap">
+        <div class="score-hero">
+          <div class="score-tag">Assessment Complete</div>
+          <div class="score-number" id="score-display">0<span>/100</span></div>
+          <div class="score-sub" id="score-sub">Calculating...</div>
+          <div class="score-bar-outer">
+            <div class="score-bar-inner" id="score-bar" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="results-grid">
+          <div class="result-stat">
+            <div class="rs-label">Correct</div>
+            <div class="rs-value green" id="stat-correct">0</div>
+          </div>
+          <div class="result-stat">
+            <div class="rs-label">Partial</div>
+            <div class="rs-value warn" id="stat-partial">0</div>
+          </div>
+          <div class="result-stat">
+            <div class="rs-label">Incorrect</div>
+            <div class="rs-value red" id="stat-incorrect">0</div>
+          </div>
+        </div>
+
+        <div class="section-title">Task Breakdown</div>
+        <div class="breakdown-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Battery ID</th>
+                <th>Your Label</th>
+                <th>Correct Label</th>
+                <th>Sub-Label</th>
+                <th>LFP</th>
+                <th>Points</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody id="breakdown-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="screen" id="screen-admin">
+      <div class="admin-header">
+        <h2>Assessment Dashboard</h2>
+        <div style="display:flex;gap:10px">
+          <button class="btn-ghost" id="btn-refresh" style="display:inline-block">↻ Refresh</button>
+          <button class="btn-primary" id="btn-export">↓ Export Results</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Assessed</div>
+          <div class="stat-value" id="stat-total">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg Score</div>
+          <div class="stat-value" id="stat-avg">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Top Score</div>
+          <div class="stat-value" id="stat-top">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pass Rate (≥70)</div>
+          <div class="stat-value" id="stat-pass">—</div>
+        </div>
+      </div>
+
+      <div class="section-title">Annotator Results</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Score</th>
+              <th>Correct</th>
+              <th>Partial</th>
+              <th>Incorrect</th>
+              <th>Time Taken</th>
+              <th>Submitted</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="admin-tbody">
+            <tr><td colspan="8" style="color:var(--text-dim);text-align:center;padding:24px;">No results yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <p id="loading-text">Loading...</p>
+</div>
+<div id="toast"></div>
+
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════
+const CONFIG = {
+  CLIENT_ID: '92798755923-ah1qkitovkkq4qcs53rv6srpu86106lk.apps.googleusercontent.com',
+  SHEET_ID: '1o1Xd0KOIwmHSwf9KhF6UR8DzQV6mj7fEuUQjpUb1NWE',
+  ADMIN_EMAILS: ['ayush.siddhi@cloudfactory.com'],
+  SCOPES: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file'
+};
+
+const SHEETS = { RESPONSES: 'responses', ANNOTATORS: 'annotators' };
+
+// ═══════════════════════════════════════════════
+// GROUND TRUTH — hardcoded, never shown to annotator
+// ═══════════════════════════════════════════════
+const GROUND_TRUTH = [
+  { id: 'L1-20260224-001408', label: 'NiCd',       sublabel: '',        lfp: '',        scoreVisible: true  },
+  { id: 'L1-20260224-000835', label: 'Lithium',     sublabel: 'Li-ion',  lfp: 'Unknown', scoreVisible: true  },
+  { id: 'L1-20260227-002753', label: 'Lithium',     sublabel: 'Li-ion',  lfp: 'Unknown', scoreVisible: false },
+  { id: 'L1-20260224-001381', label: 'NiCd',        sublabel: '',        lfp: '',        scoreVisible: false },
+  { id: 'L1-20260227-002778', label: 'NiMH',        sublabel: '',        lfp: '',        scoreVisible: false },
+  { id: 'L1-20260227-002797', label: 'Lithium',     sublabel: 'Li-ion',  lfp: 'No',      scoreVisible: null  },
+  { id: 'L1-20260227-002802', label: 'Lithium',     sublabel: 'Li-ion',  lfp: 'No',      scoreVisible: null  },
+  { id: 'L1-20260227-003210', label: 'Lithium',     sublabel: 'Li-ion',  lfp: 'No',      scoreVisible: null  },
+  { id: 'L1-20260224-001411', label: 'NiCd',        sublabel: '',        lfp: '',        scoreVisible: null  },
+  { id: 'L1-20260224-001413', label: 'NiMH',        sublabel: '',        lfp: '',        scoreVisible: null  },
+  { id: 'L1-20260409-012057', label: 'Data Error',  sublabel: '',        lfp: '',        scoreVisible: null  },
+  { id: 'L1-20260225-001629', label: 'Lead',        sublabel: '',        lfp: '',        scoreVisible: null  },
+  { id: 'L1-20260408-007141', label: 'NiCd',        sublabel: '',        lfp: '',        scoreVisible: null  },
+  { id: 'L1-20260224-001431', label: 'NiCd',        sublabel: '',        lfp: '',        scoreVisible: true  },
+  { id: 'L1-20260409-011557', label: 'Unknown',     sublabel: '',        lfp: '',        scoreVisible: null  },
+];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let state = {
+  user: null,
+  accessToken: null,
+  isAdmin: false,
+  currentTaskIndex: 0,
+  answers: [],        // collected answers per task
+  taskStartTime: null,
+  timerInterval: null,
+  totalStartTime: null,
+};
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className = '', 3000);
+}
+
+function setLoading(show, text = 'Loading...') {
+  document.getElementById('loading-text').textContent = text;
+  document.getElementById('loading-overlay').classList.toggle('active', show);
+}
+
+function formatSeconds(s) {
+  if (!s || s < 0) return '—';
+  const m = Math.floor(s / 60), sec = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(Math.floor(sec)).padStart(2,'0')}`;
+}
+
+// ═══════════════════════════════════════════════
+// SHEETS API
+// ═══════════════════════════════════════════════
+async function sheetsGet(range) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}`;
+  const res = await fetch(url, { headers: { Authorization: 'Bearer ' + state.accessToken } });
+  const data = await res.json();
+  if (data.error && data.error.code === 401) { await refreshToken(); return sheetsGet(range); }
+  return data;
+}
+
+async function sheetsAppend(range, values) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values })
+  });
+  const data = await res.json();
+  if (data.error && data.error.code === 401) { await refreshToken(); return sheetsAppend(range, values); }
+  return data;
+}
+
+async function sheetsUpdate(range, values) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values })
+  });
+  const data = await res.json();
+  if (data.error && data.error.code === 401) { await refreshToken(); return sheetsUpdate(range, values); }
+  return data;
+}
+
+async function sheetsBatchUpdate(requests) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}:batchUpdate`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requests })
+  });
+  return res.json();
+}
+
+async function refreshToken() {
+  return new Promise((resolve, reject) => {
+    const original = window._tokenClient.callback;
+    window._tokenClient.callback = (resp) => {
+      window._tokenClient.callback = original;
+      if (resp.error) { reject(new Error(resp.error)); return; }
+      state.accessToken = resp.access_token;
+      resolve();
+    };
+    window._tokenClient.requestAccessToken({ prompt: '' });
+  });
+}
+
+async function ensureSheets() {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}`;
+  const res = await fetch(url, { headers: { Authorization: 'Bearer ' + state.accessToken } });
+  const data = await res.json();
+  if (!data.sheets) throw new Error('Cannot access assessment sheet. Check sharing settings.');
+  const existing = data.sheets.map(s => s.properties.title);
+  const toCreate = [];
+  if (!existing.includes(SHEETS.RESPONSES)) toCreate.push({ addSheet: { properties: { title: SHEETS.RESPONSES } } });
+  if (!existing.includes(SHEETS.ANNOTATORS)) toCreate.push({ addSheet: { properties: { title: SHEETS.ANNOTATORS } } });
+  if (toCreate.length) {
+    await sheetsBatchUpdate(toCreate);
+    if (!existing.includes(SHEETS.RESPONSES)) {
+      await sheetsUpdate(`${SHEETS.RESPONSES}!A1`, [[
+        'email', 'battery_id', 'label_answer', 'sublabel_answer', 'lfp_answer',
+        'evidence', 'evidence_url', 'text_logo_visible', 'needs_review',
+        'label_correct', 'sublabel_correct', 'lfp_correct', 'points_earned', 'max_points'
+      ]]);
+    }
+    if (!existing.includes(SHEETS.ANNOTATORS)) {
+      await sheetsUpdate(`${SHEETS.ANNOTATORS}!A1`, [[
+        'email', 'score', 'correct', 'partial', 'incorrect', 'total_time_seconds', 'submitted_at', 'status'
+      ]]);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// SCORING
+// ═══════════════════════════════════════════════
+function scoreTask(truth, answer) {
+  const labelMatch = answer.label.toLowerCase() === truth.label.toLowerCase();
+
+  if (truth.label === 'Lithium') {
+    // Lithium: label 50%, sublabel 25%, lfp 25%
+    const labelPts = labelMatch ? 50 : 0;
+    const sublabelPts = labelMatch && answer.sublabel && truth.sublabel &&
+      answer.sublabel.toLowerCase() === truth.sublabel.toLowerCase() ? 25 : 0;
+    const lfpPts = labelMatch && answer.sublabel === truth.sublabel && answer.lfp && truth.lfp &&
+      answer.lfp.toLowerCase() === truth.lfp.toLowerCase() ? 25 : 0;
+    const total = labelPts + sublabelPts + lfpPts;
+    return {
+      points: total,
+      max: 100,
+      labelCorrect: labelPts > 0,
+      sublabelCorrect: sublabelPts > 0,
+      lfpCorrect: lfpPts > 0,
+      result: total === 100 ? 'correct' : total > 0 ? 'partial' : 'incorrect'
+    };
+  } else {
+    // Non-Lithium: label 100%
+    return {
+      points: labelMatch ? 100 : 0,
+      max: 100,
+      labelCorrect: labelMatch,
+      sublabelCorrect: null,
+      lfpCorrect: null,
+      result: labelMatch ? 'correct' : 'incorrect'
+    };
+  }
+}
+
+// ═══════════════════════════════════════════════
+// ASSESSMENT FLOW
+// ═══════════════════════════════════════════════
+function loadTask(index) {
+  const task = GROUND_TRUTH[index];
+  document.getElementById('display-battery-id').textContent = task.id;
+  document.getElementById('field-label').value = '';
+  document.getElementById('field-sublabel').value = '';
+  document.getElementById('field-lfp').value = '';
+  document.getElementById('field-evidence').value = '';
+  document.getElementById('field-evidence-url').value = '';
+  document.getElementById('field-visible').checked = false;
+  document.getElementById('field-needs-review').checked = false;
+  document.getElementById('lithium-fields').classList.remove('visible');
+  document.getElementById('lfp-field').classList.remove('visible');
+
+  const pct = (index / GROUND_TRUTH.length) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-count').textContent = `Task ${index + 1} of ${GROUND_TRUTH.length}`;
+
+  // Update next button label on last task
+  document.getElementById('btn-next').textContent = index === GROUND_TRUTH.length - 1 ? 'Submit Assessment ✓' : 'Next Task →';
+
+  // Start task timer
+  clearInterval(state.timerInterval);
+  state.taskStartTime = Date.now();
+  state.timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - state.taskStartTime) / 1000);
+    document.getElementById('timer-display').textContent = formatSeconds(elapsed);
+  }, 1000);
+}
+
+function handleNext() {
+  const label = document.getElementById('field-label').value;
+  const evidence = document.getElementById('field-evidence').value.trim();
+
+  if (!label) { showToast('Please select a label', 'error'); return; }
+  if (!evidence) { showToast('Evidence is required', 'error'); document.getElementById('field-evidence').focus(); return; }
+
+  if (label === 'Lithium') {
+    const sublabel = document.getElementById('field-sublabel').value;
+    if (!sublabel) { showToast('Please select a Lithium sub-label', 'error'); return; }
+    if ((sublabel === 'Li-ion' || sublabel === 'Solid-state') && !document.getElementById('field-lfp').value) {
+      showToast('Please select an LFP value', 'error'); return;
+    }
+  }
+
+  // Save answer
+  state.answers.push({
+    batteryId: GROUND_TRUTH[state.currentTaskIndex].id,
+    label,
+    sublabel: document.getElementById('field-sublabel').value,
+    lfp: document.getElementById('field-lfp').value,
+    evidence,
+    evidenceUrl: document.getElementById('field-evidence-url').value.trim(),
+    textLogoVisible: document.getElementById('field-visible').checked,
+    needsReview: document.getElementById('field-needs-review').checked,
+  });
+
+  state.currentTaskIndex++;
+
+  if (state.currentTaskIndex < GROUND_TRUTH.length) {
+    loadTask(state.currentTaskIndex);
+  } else {
+    clearInterval(state.timerInterval);
+    submitAssessment();
+  }
+}
+
+async function submitAssessment() {
+  setLoading(true, 'Calculating your score...');
+  const totalTime = Math.floor((Date.now() - state.totalStartTime) / 1000);
+
+  // Score each task
+  let totalPoints = 0;
+  let correct = 0, partial = 0, incorrect = 0;
+  const scored = [];
+
+  for (let i = 0; i < GROUND_TRUTH.length; i++) {
+    const truth = GROUND_TRUTH[i];
+    const answer = state.answers[i];
+    const s = scoreTask(truth, answer);
+    totalPoints += s.points;
+    if (s.result === 'correct') correct++;
+    else if (s.result === 'partial') partial++;
+    else incorrect++;
+    scored.push({ ...answer, ...s, truth });
+  }
+
+  const finalScore = Math.round(totalPoints / GROUND_TRUTH.length);
+
+  try {
+    // Write all responses to sheet
+    const responseRows = scored.map(s => [
+      state.user.email,
+      s.batteryId,
+      s.label,
+      s.sublabel || '',
+      s.lfp || '',
+      s.evidence,
+      s.evidenceUrl || '',
+      s.textLogoVisible ? 'Yes' : '',
+      s.needsReview ? 'Yes' : '',
+      s.labelCorrect ? 'Yes' : 'No',
+      s.sublabelCorrect === null ? 'N/A' : s.sublabelCorrect ? 'Yes' : 'No',
+      s.lfpCorrect === null ? 'N/A' : s.lfpCorrect ? 'Yes' : 'No',
+      s.points,
+      s.max
+    ]);
+    await sheetsAppend(`${SHEETS.RESPONSES}!A:N`, responseRows);
+
+    // Write summary to annotators sheet
+    await sheetsAppend(`${SHEETS.ANNOTATORS}!A:H`, [[
+      state.user.email,
+      finalScore,
+      correct,
+      partial,
+      incorrect,
+      totalTime,
+      new Date().toISOString(),
+      'complete'
+    ]]);
+
+    showResults(finalScore, correct, partial, incorrect, scored);
+  } catch(e) {
+    showToast('Error saving results: ' + e.message, 'error');
+    console.error(e);
+  }
+  setLoading(false);
+}
+
+function showResults(score, correct, partial, incorrect, scored) {
+  showScreen('results');
+
+  document.getElementById('score-display').innerHTML = `${score}<span>/100</span>`;
+  document.getElementById('score-sub').textContent =
+    score >= 90 ? 'Excellent work!' :
+    score >= 70 ? 'Good job — above pass threshold.' :
+    score >= 50 ? 'Below pass threshold — review required.' :
+    'Needs significant improvement.';
+
+  const bar = document.getElementById('score-bar');
+  bar.style.background = score >= 70 ? 'var(--green)' : score >= 50 ? 'var(--warn)' : 'var(--red)';
+  setTimeout(() => bar.style.width = score + '%', 100);
+
+  document.getElementById('stat-correct').textContent = correct;
+  document.getElementById('stat-partial').textContent = partial;
+  document.getElementById('stat-incorrect').textContent = incorrect;
+
+  // Breakdown table
+  const tbody = document.getElementById('breakdown-tbody');
+  tbody.innerHTML = scored.map(s => {
+    const resultBadge = s.result === 'correct'
+      ? '<span class="badge badge-green">Correct</span>'
+      : s.result === 'partial'
+      ? '<span class="badge badge-yellow">Partial</span>'
+      : '<span class="badge badge-red">Incorrect</span>';
+
+    const sublabelCell = s.truth.label === 'Lithium'
+      ? `<td>${s.sublabel || '—'} ${s.sublabelCorrect ? '✓' : s.sublabelCorrect === false ? '✗' : ''}</td>`
+      : '<td style="color:var(--text-dim)">N/A</td>';
+
+    const lfpCell = (s.truth.label === 'Lithium' && (s.truth.sublabel === 'Li-ion' || s.truth.sublabel === 'Solid-state'))
+      ? `<td>${s.lfp || '—'} ${s.lfpCorrect ? '✓' : s.lfpCorrect === false ? '✗' : ''}</td>`
+      : '<td style="color:var(--text-dim)">N/A</td>';
+
+    return `<tr>
+      <td style="font-family:var(--mono);font-size:11px">${s.batteryId}</td>
+      <td>${s.label} ${s.labelCorrect ? '✓' : '✗'}</td>
+      <td style="color:var(--text-muted)">${s.truth.label}</td>
+      ${sublabelCell}
+      ${lfpCell}
+      <td class="pts-cell" style="color:${s.points === s.max ? 'var(--green)' : s.points > 0 ? 'var(--warn)' : 'var(--red)'}">${s.points}/${s.max}</td>
+      <td>${resultBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+// ADMIN
+// ═══════════════════════════════════════════════
+async function loadAdminDashboard() {
+  setLoading(true, 'Loading dashboard...');
+  try {
+    const data = await sheetsGet(`${SHEETS.ANNOTATORS}!A:H`);
+    const rows = (data.values || []).slice(1);
+
+    const total = rows.length;
+    const scores = rows.map(r => parseFloat(r[1]) || 0);
+    const avg = total > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / total) : 0;
+    const top = total > 0 ? Math.max(...scores) : 0;
+    const pass = total > 0 ? rows.filter(r => parseFloat(r[1]) >= 70).length : 0;
+    const passRate = total > 0 ? Math.round((pass / total) * 100) + '%' : '—';
+
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-avg').textContent = total > 0 ? avg : '—';
+    document.getElementById('stat-top').textContent = total > 0 ? top : '—';
+    document.getElementById('stat-pass').textContent = passRate;
+
+    const tbody = document.getElementById('admin-tbody');
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text-dim);text-align:center;padding:24px;">No results yet</td></tr>';
+    } else {
+      const sorted = [...rows].sort((a, b) => (parseFloat(b[1]) || 0) - (parseFloat(a[1]) || 0));
+      tbody.innerHTML = sorted.map(r => {
+        const score = parseFloat(r[1]) || 0;
+        const passed = score >= 70;
+        return `<tr>
+          <td style="font-family:var(--mono);font-size:12px">${r[0]}</td>
+          <td class="pts-cell" style="color:${score >= 70 ? 'var(--green)' : score >= 50 ? 'var(--warn)' : 'var(--red)'}">${score}</td>
+          <td style="color:var(--green)">${r[2] || 0}</td>
+          <td style="color:var(--warn)">${r[3] || 0}</td>
+          <td style="color:var(--red)">${r[4] || 0}</td>
+          <td style="font-family:var(--mono);font-size:12px">${formatSeconds(parseInt(r[5]))}</td>
+          <td style="font-size:12px;color:var(--text-muted)">${r[6] ? new Date(r[6]).toLocaleString() : '—'}</td>
+          <td><span class="badge ${passed ? 'badge-green' : 'badge-red'}">${passed ? 'Pass' : 'Fail'}</span></td>
+        </tr>`;
+      }).join('');
+    }
+  } catch(e) {
+    showToast('Error loading dashboard: ' + e.message, 'error');
+  }
+  setLoading(false);
+}
+
+async function exportResults() {
+  setLoading(true, 'Exporting...');
+  try {
+    const [summaryData, responseData] = await Promise.all([
+      sheetsGet(`${SHEETS.ANNOTATORS}!A:H`),
+      sheetsGet(`${SHEETS.RESPONSES}!A:N`)
+    ]);
+
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.aoa_to_sheet(summaryData.values || []);
+    const ws2 = XLSX.utils.aoa_to_sheet(responseData.values || []);
+    XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Detailed Responses');
+    XLSX.writeFile(wb, `assessment_results_${new Date().toISOString().slice(0,10)}.xlsx`);
+    showToast('Export complete!');
+  } catch(e) {
+    showToast('Export failed: ' + e.message, 'error');
+  }
+  setLoading(false);
+}
+
+// ═══════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════
+function initTokenClient() {
+  window._tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CONFIG.CLIENT_ID,
+    scope: CONFIG.SCOPES,
+    callback: async (resp) => {
+      if (resp.error) { showToast('Sign in error: ' + resp.error, 'error'); return; }
+      state.accessToken = resp.access_token;
+      try {
+        const res = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+          headers: { Authorization: 'Bearer ' + resp.access_token }
+        });
+        const info = await res.json();
+        if (!info.email) throw new Error('No email returned');
+        await signInUser(info.email, info.name || info.email);
+      } catch(e) {
+        showToast('Could not get user info — please try again', 'error');
+      }
+    }
+  });
+}
+
+async function signInUser(email, name) {
+  state.user = { email, name };
+  state.isAdmin = CONFIG.ADMIN_EMAILS.includes(email);
+
+  document.getElementById('header-email').textContent = email;
+  document.getElementById('header-email').style.display = '';
+  document.getElementById('btn-logout').style.display = '';
+  if (state.isAdmin) document.getElementById('btn-admin-toggle').style.display = '';
+
+  setLoading(true, 'Checking assessment status...');
+  try {
+    await ensureSheets();
+
+    if (state.isAdmin) {
+      await loadAdminDashboard();
+      showScreen('admin');
+      setLoading(false);
+      return;
+    }
+
+    // Check if already completed
+    const data = await sheetsGet(`${SHEETS.ANNOTATORS}!A:A`);
+    const emails = (data.values || []).slice(1).map(r => r[0]);
+    if (emails.includes(email)) {
+      showScreen('done');
+      setLoading(false);
+      return;
+    }
+
+    // Start assessment
+    state.currentTaskIndex = 0;
+    state.answers = [];
+    state.totalStartTime = Date.now();
+    loadTask(0);
+    showScreen('assess');
+  } catch(e) {
+    showToast(e.message, 'error');
+    signOut();
+  }
+  setLoading(false);
+}
+
+function signOut() {
+  state.user = null;
+  state.accessToken = null;
+  state.currentTaskIndex = 0;
+  state.answers = [];
+  clearInterval(state.timerInterval);
+  document.getElementById('header-email').style.display = 'none';
+  document.getElementById('btn-logout').style.display = 'none';
+  document.getElementById('btn-admin-toggle').style.display = 'none';
+  showScreen('login');
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  initTokenClient();
+  showScreen('login');
+
+  document.getElementById('btn-google-signin').addEventListener('click', () => {
+    window._tokenClient.requestAccessToken({ prompt: 'select_account' });
+  });
+
+  document.getElementById('btn-logout').addEventListener('click', signOut);
+
+  document.getElementById('btn-admin-toggle').addEventListener('click', () => {
+    if (document.getElementById('screen-admin').classList.contains('active')) {
+      showScreen('assess');
+    } else {
+      loadAdminDashboard();
+      showScreen('admin');
+    }
+  });
+
+  // Conditional dropdowns
+  document.getElementById('field-label').addEventListener('change', (e) => {
+    const isLithium = e.target.value === 'Lithium';
+    document.getElementById('lithium-fields').classList.toggle('visible', isLithium);
+    if (!isLithium) {
+      document.getElementById('field-sublabel').value = '';
+      document.getElementById('field-lfp').value = '';
+      document.getElementById('lfp-field').classList.remove('visible');
+    }
+  });
+
+  document.getElementById('field-sublabel').addEventListener('change', (e) => {
+    const showLFP = e.target.value === 'Li-ion' || e.target.value === 'Solid-state';
+    document.getElementById('lfp-field').classList.toggle('visible', showLFP);
+    if (!showLFP) document.getElementById('field-lfp').value = '';
+  });
+
+  document.getElementById('btn-next').addEventListener('click', handleNext);
+  document.getElementById('btn-export').addEventListener('click', exportResults);
+  document.getElementById('btn-refresh').addEventListener('click', loadAdminDashboard);
+});
+</script>
+</body>
+</html>
