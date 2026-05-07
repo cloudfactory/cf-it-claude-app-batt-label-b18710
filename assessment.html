@@ -151,8 +151,8 @@
 
   .breakdown-table { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 24px; }
   table { width: 100%; border-collapse: collapse; }
-  th { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); padding: 10px 14px; text-align: left; background: var(--surface2); border-bottom: 1px solid var(--border); }
-  td { font-size: 13px; padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); }
+  th { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); padding: 8px 10px; text-align: left; background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { font-size: 13px; padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: rgba(255,255,255,0.02); }
 
@@ -172,7 +172,7 @@
   .stat-card .stat-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
   .stat-card .stat-value { font-family: var(--mono); font-size: 28px; font-weight: 600; color: var(--accent); line-height: 1; }
 
-  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 28px; }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; margin-bottom: 28px; }
 
   #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 12px 18px; font-family: var(--mono); font-size: 12px; color: var(--text); opacity: 0; transform: translateY(8px); transition: all 0.2s; pointer-events: none; z-index: 999; }
   #toast.show { opacity: 1; transform: translateY(0); }
@@ -832,17 +832,53 @@ async function loadAdminDashboard() {
   setLoading(false);
 }
 
-function buildEmailBody(email, score, correct, partial, incorrect) {
+async function fetchAnnotatorResponses(email) {
+  const data = await sheetsGet(`${SHEETS.RESPONSES}!A:N`);
+  const rows = (data.values || []).slice(1).filter(r => r[0] === email);
+  return rows;
+}
+
+function buildEmailBody(email, score, correct, partial, incorrect, responseRows) {
   const passed = score >= 70;
   const firstName = email.split('.')[0];
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
+  // Build per-task breakdown
+  let breakdown = '';
+  if (responseRows && responseRows.length > 0) {
+    breakdown = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TASK BREAKDOWN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+    responseRows.forEach((r, i) => {
+      const batteryId  = r[1] || '—';
+      const yourLabel  = r[2] || '—';
+      const yourSub    = r[3] || '';
+      const yourLfp    = r[4] || '';
+      const corrLabel  = r[9]  === 'Yes' ? '✓' : '✗';
+      const corrSub    = r[10] === 'N/A' ? '' : r[10] === 'Yes' ? '✓' : '✗';
+      const corrLfp    = r[11] === 'N/A' ? '' : r[11] === 'Yes' ? '✓' : '✗';
+      const pts        = r[12] || '0';
+      const max        = r[13] || '100';
+
+      const yourAnswer = [yourLabel, yourSub, yourLfp].filter(Boolean).join(' › ');
+      const result     = parseInt(pts) === parseInt(max) ? 'CORRECT' : parseInt(pts) > 0 ? 'PARTIAL' : 'INCORRECT';
+
+      breakdown += `\nTask ${String(i+1).padStart(2,'0')} | ${batteryId}
+  Your answer : ${yourAnswer}
+  Label       : ${corrLabel}${corrSub ? '  Sub-label : ' + corrSub : ''}${corrLfp ? '  LFP : ' + corrLfp : ''}
+  Points      : ${pts}/${max} (${result})
+`;
+    });
+    breakdown += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  }
+
   return `Hi ${cap(firstName)},
 
-Thank you for completing the Battery Chemistry Assessment. Here are your results:
+Thank you for completing the Battery Chemistry Assessment. Here are your full results:
 
 ━━━━━━━━━━━━━━━━━━━━━━
-ASSESSMENT RESULTS
+SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━
 Overall Score:  ${score}/100
 Result:         ${passed ? '✓ PASS' : '✗ FAIL'}
@@ -851,6 +887,7 @@ Correct:        ${correct} / 15
 Partial:        ${partial} / 15
 Incorrect:      ${incorrect} / 15
 ━━━━━━━━━━━━━━━━━━━━━━
+${breakdown}
 
 ${passed
   ? 'Well done — you have met the required standard for battery chemistry labeling.'
@@ -862,10 +899,11 @@ CloudFactory Assessment Team`;
 }
 
 async function sendResultEmail(toEmail, score, correct, partial, incorrect) {
-  setLoading(true, `Sending result to ${toEmail}...`);
+  setLoading(true, `Fetching responses for ${toEmail}...`);
   try {
+    const responseRows = await fetchAnnotatorResponses(toEmail);
     const subject = `Battery Chemistry Assessment — Your Results`;
-    const body = buildEmailBody(toEmail, score, correct, partial, incorrect);
+    const body = buildEmailBody(toEmail, score, correct, partial, incorrect, responseRows);
 
     // Compose RFC 2822 message
     const message = [
