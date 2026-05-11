@@ -1006,11 +1006,17 @@ function renderDisagreements(rows){
     const stratum=r[5]||'';
     const gold=r[19]||'';
     // Pre-fill sublabel/lfp from gold if set, otherwise suggest from pass-2 answer
-    const goldSub = r[20] || (gold==='Lithium' ? (p2Sub||p1Sub||'') : '');
-    const goldLfp = r[21] || (goldSub&&['Li-ion','Solid-state'].includes(goldSub) ? (p2Lfp||p1Lfp||'') : '');
+    // Default gold sub/lfp from annotator answers if not yet set
+    const effectiveGold = gold || p1Label || '';
+    const goldSub = r[20] || (p2Sub||p1Sub||'');
+    const goldLfp = r[21] || (p2Lfp||p1Lfp||'');
     const goldBy  = (r[22]||'').split('@')[0];
-    const showSub = gold==='Lithium' || (!gold && p1Label.toLowerCase()==='lithium');
-    const showLfp = showSub && ['Li-ion','Solid-state'].includes(goldSub);
+    // Show sublabel whenever either annotator used Lithium
+    const showSub = effectiveGold.toLowerCase()==='lithium' ||
+                    p1Label.toLowerCase()==='lithium' ||
+                    p2Label.toLowerCase()==='lithium';
+    // Show LFP whenever sublabel is Li-ion or Solid-state
+    const showLfp = showSub && ['Li-ion','Solid-state','li-ion','solid-state'].includes(goldSub);
     const subOpts = ['','Li-ion','Li Primary','Solid-state','Unknown'].map(v=>`<option value="${v}" ${goldSub===v?'selected':''}>${v||'Sub-label…'}</option>`).join('');
     const lfpOpts = ['','Yes','No','Unknown'].map(v=>`<option value="${v}" ${goldLfp===v?'selected':''}>${v||'LFP?'}</option>`).join('');
     const labelDiff=p1Label.toLowerCase()!==p2Label.toLowerCase();
