@@ -382,6 +382,11 @@ async function loadRemoteConfig(accessToken) {
   }
 }
 
+async function loadConfig(accessToken) {
+  const raw = await loadRemoteConfig(accessToken);
+  APP_CONFIG = parseConfig(raw);
+}
+
 function parseConfig(raw) {
   return {
     // Auth
@@ -497,46 +502,52 @@ function moe(n,N){ if(!n||n<=0) return 1; n=Math.min(n,N); const base=1.96*Math.
 // ═══════════════════════════════════════════════════════════════
 // SHEETS API
 // ═══════════════════════════════════════════════════════════════
-async function sheetsGet(range, timeoutMs=15000){
-  const controller = new AbortController();
-  const timer = setTimeout(()=>controller.abort(), timeoutMs);
-  try {
-    const url=`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}`;
-    const res=await fetch(url,{headers:{Authorization:'Bearer '+state.accessToken},signal:controller.signal});
-    clearTimeout(timer);
-    const d=await res.json();
-    if(d.error?.code===401){ await refreshToken(); return sheetsGet(range); }
-    return d;
-  } catch(e) {
-    clearTimeout(timer);
-    if(e.name==='AbortError') throw new Error('Request timed out — please check your connection');
-    throw e;
+// Sheets API — same pattern as annotation app
+async function sheetsRequest(fn) {
+  const result = await fn();
+  if (result && result.error && result.error.code === 401) {
+    await refreshToken();
+    return await fn();
   }
+  return result;
 }
-async function sheetsUpdate(range,values,timeoutMs=15000){
-  const controller = new AbortController();
-  const timer = setTimeout(()=>controller.abort(), timeoutMs);
-  try {
-    const url=`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
-    const res=await fetch(url,{method:'PUT',headers:{Authorization:'Bearer '+state.accessToken,'Content-Type':'application/json'},body:JSON.stringify({values}),signal:controller.signal});
-    clearTimeout(timer);
-    const d=await res.json();
-    if(d.error?.code===401){ await refreshToken(); return sheetsUpdate(range,values); }
-    if(d.error?.code===403) throw new Error('Permission denied — make sure the sheet is shared with your account as Editor');
-    return d;
-  } catch(e) {
-    clearTimeout(timer);
-    if(e.name==='AbortError') throw new Error('Request timed out — please check your connection');
-    throw e;
-  }
+
+async function sheetsGet(range) {
+  return sheetsRequest(async () => {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}`;
+    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + state.accessToken } });
+    const data = await res.json();
+    if (!res.ok && res.status !== 401) throw new Error('Sheets GET failed: ' + res.status);
+    return data;
+  });
 }
-async function sheetsAppend(range,values){
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-  const res=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+state.accessToken,'Content-Type':'application/json'},body:JSON.stringify({values})});
-  const d=await res.json();
-  if(d.error?.code===401){ await refreshToken(); return sheetsAppend(range,values); }
-  if(d.error?.code===403) throw new Error('Permission denied — make sure the sheet is shared with your account as Editor');
-  return d;
+
+async function sheetsUpdate(range, values) {
+  return sheetsRequest(async () => {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values })
+    });
+    const data = await res.json();
+    if (!res.ok && res.status !== 401) throw new Error('Sheets UPDATE failed: ' + res.status);
+    return data;
+  });
+}
+
+async function sheetsAppend(range, values) {
+  return sheetsRequest(async () => {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values })
+    });
+    const data = await res.json();
+    if (!res.ok && res.status !== 401) throw new Error('Sheets APPEND failed: ' + res.status);
+    return data;
+  });
 }
 async function ensureSheet(name,headers){
   const meta=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}`,{headers:{Authorization:'Bearer '+state.accessToken}});
