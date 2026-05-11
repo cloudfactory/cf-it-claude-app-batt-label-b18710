@@ -234,6 +234,21 @@ code{background:var(--surface2);padding:1px 5px;border-radius:2px;font-size:10px
   </div>
 </div>
 
+<!-- NOT SEEDED -->
+<div class="screen" id="screen-not-seeded">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px)">
+    <div class="done-card">
+      <div class="done-icon" style="font-size:32px">⏳</div>
+      <h2 style="color:var(--warn)">Queue not ready yet</h2>
+      <p style="color:var(--text-muted);font-size:13px;margin-top:8px;line-height:1.6">The consensus task queue hasn't been seeded yet.<br>An admin needs to sign in and click <strong>Run seed</strong> first.</p>
+      <div style="margin-top:24px;display:flex;gap:10px;justify-content:center">
+        <button class="btn-secondary" onclick="loadNextTask()" style="display:inline-block">↻ Check again</button>
+        <button class="btn-ghost" id="btn-goto-admin-ns" style="display:inline-block">Admin view</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ADMIN -->
 <div class="screen" id="screen-admin">
   <div class="admin-header">
@@ -537,9 +552,11 @@ async function seedConsensusQueue(){
 // TASK ASSIGNMENT
 // ═══════════════════════════════════════════════════════════════
 async function getOrAssignTask(email){
-  const data=await sheetsGet(`${SHEETS.CONSENSUS}!A:U`);
+  let data;
+  try { data=await sheetsGet(`${SHEETS.CONSENSUS}!A:U`); } catch(e){ return {notSeeded:true}; }
   const rows=data.values||[];
-  if(rows.length<2) return null;
+  // Tab doesn't exist or has only a header / is empty
+  if(!rows||rows.length<2) return {notSeeded:true};
 
   // Batteries this annotator did in pass-1 (read from tasks sheet)
   const p1Data=await sheetsGet(`${SHEETS.TASKS}!A:I`);
@@ -561,7 +578,7 @@ async function getOrAssignTask(email){
       return {rowIndex:rowNum,batteryId:r[0],origLabel:r[1],origSub:r[2],origLfp:r[3],origAnnotator:r[4],stratum:r[5]};
     }
   }
-  return null;
+  return {queueDone:true};
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -646,8 +663,12 @@ async function loadNextTask(){
   setLoading(true,'Finding next task…');
   try {
     const task=await getOrAssignTask(state.user.email);
-    if(!task){
-      // Update done stats
+    if(!task||task.notSeeded){
+      // Queue not seeded yet — show holding screen instead of done
+      showScreen('not-seeded'); setLoading(false); return;
+    }
+    if(task.queueDone){
+      // Genuinely all tasks complete for this annotator
       document.getElementById('done-completed').textContent=state.sessionCompleted;
       document.getElementById('done-agreed').textContent=state.sessionAgreed;
       document.getElementById('done-disagreed').textContent=state.sessionDisagreed;
@@ -1034,6 +1055,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 
   document.getElementById('btn-back-to-task').addEventListener('click',()=>showScreen('task'));
+  document.getElementById('btn-goto-admin-ns').addEventListener('click',()=>{
+    if(state.isAdmin){ showScreen('admin'); loadAdminDashboard(); }
+    else showToast('Admin access required','error');
+  });
   document.getElementById('btn-refresh').addEventListener('click',loadAdminDashboard);
   document.getElementById('btn-export').addEventListener('click',exportResults);
   document.getElementById('btn-seed').addEventListener('click',seedConsensusQueue);
