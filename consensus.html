@@ -3,1065 +3,1415 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Consensus Labeling — CloudFactory</title>
+<title>Battery Chemistry Assessment — CloudFactory</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg:#0f0f0f;--surface:#1a1a1a;--surface2:#222;--border:#2e2e2e;--border-bright:#444;
-  --text:#e8e8e8;--text-muted:#888;--text-dim:#555;
-  --accent:#00d4a0;--accent-dim:rgba(0,212,160,0.12);--accent-glow:rgba(0,212,160,0.25);
-  --warn:#f5a623;--warn-dim:rgba(245,166,35,0.12);
-  --red:#ff5f5f;--red-dim:rgba(255,95,95,0.1);
-  --green:#00d4a0;--green-dim:rgba(0,212,160,0.1);
-  --purple:#7c6af7;--purple-dim:rgba(124,106,247,0.12);
-  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh}
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.logo{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.08em;color:var(--accent)}
-.logo span{color:var(--text-muted);font-weight:400}
-.hdr-r{display:flex;align-items:center;gap:16px}
-.user-badge{font-family:var(--mono);font-size:11px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);padding:4px 10px;border-radius:3px;display:none}
-.btn-ghost{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--text-muted);background:none;border:1px solid var(--border);padding:5px 12px;border-radius:3px;cursor:pointer;transition:all .15s;display:none}
-.btn-ghost:hover{border-color:var(--border-bright);color:var(--text)}
-main{max-width:960px;margin:0 auto;padding:24px 32px}
-.screen{display:none}.screen.active{display:block}
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #222222;
+    --border: #2e2e2e;
+    --border-bright: #444;
+    --text: #e8e8e8;
+    --text-muted: #888;
+    --text-dim: #555;
+    --accent: #7c6af7;
+    --accent-dim: rgba(124,106,247,0.12);
+    --accent-glow: rgba(124,106,247,0.25);
+    --green: #00d4a0;
+    --green-dim: rgba(0,212,160,0.12);
+    --red: #ff5f5f;
+    --red-dim: rgba(255,95,95,0.1);
+    --warn: #f5a623;
+    --warn-dim: rgba(245,166,35,0.12);
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
 
-/* LOGIN */
-#screen-login.active{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px)}
-.login-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:48px;width:420px;text-align:center}
-.login-card h2{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--accent);margin-bottom:8px}
-.login-card p{color:var(--text-muted);font-size:13px;margin-bottom:32px;line-height:1.6}
-.google-btn{width:100%;background:#fff;color:#333;border:none;border-radius:4px;padding:12px 20px;font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s}
-.google-btn:hover{background:#f0f0f0;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; min-height: 100vh; }
 
-/* TASK SCREEN */
-.task-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-.battery-id-display{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--accent);letter-spacing:.04em}
-.progress-wrap{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:11px;color:var(--text-muted)}
-.progress-bar{width:160px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
-.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
-.timer-display{font-family:var(--mono);font-size:13px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);padding:4px 12px;border-radius:3px}
-.form-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:28px}
-.field{margin-bottom:20px}
-.field label{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:8px}
-select,input[type=text],textarea{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-size:13px;padding:9px 12px;border-radius:3px;outline:none;transition:border .15s}
-select:focus,input:focus,textarea:focus{border-color:var(--accent)}
-textarea{resize:vertical;min-height:80px;line-height:1.5}
-.field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.template-row{display:flex;gap:8px;margin-bottom:6px}
-.template-row select{flex:1}
-.checkbox-row{display:flex;gap:24px}
-.checkbox-label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-muted)}
-.checkbox-label input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px}
-.btn-primary{background:var(--accent);color:#0f0f0f;border:none;border-radius:4px;padding:11px 28px;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.06em;cursor:pointer;transition:all .15s;text-transform:uppercase}
-.btn-primary:hover{filter:brightness(1.1)}
-.btn-primary:disabled{opacity:.5;cursor:not-allowed}
-.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:10px 20px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;cursor:pointer;transition:all .15s}
-.btn-secondary:hover{border-color:var(--border-bright)}
-.form-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
 
-/* DONE */
-#screen-done.active{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px)}
-.done-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:48px;width:480px;text-align:center}
-.done-icon{font-size:40px;margin-bottom:16px}
-.done-card h2{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--accent);margin-bottom:8px}
-.done-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:24px 0}
-.done-stat{background:var(--surface2);border-radius:4px;padding:14px}
-.done-stat-val{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--accent)}
-.done-stat-lbl{font-size:11px;color:var(--text-dim);margin-top:4px}
+  .logo { font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: var(--accent); }
+  .logo span { color: var(--text-muted); font-weight: 400; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .user-badge { font-family: var(--mono); font-size: 11px; color: var(--text-muted); background: var(--surface2); border: 1px solid var(--border); padding: 4px 10px; border-radius: 3px; display: none; }
+  .btn-ghost { font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em; color: var(--text-muted); background: none; border: 1px solid var(--border); padding: 5px 12px; border-radius: 3px; cursor: pointer; transition: all 0.15s; display: none; }
+  .btn-ghost:hover { border-color: var(--border-bright); color: var(--text); }
 
-/* ADMIN */
-.admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-.admin-header h2{font-family:var(--mono);font-size:16px;font-weight:600}
-.admin-btn-row{display:flex;gap:10px}
-.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:24px}
-.tab{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);padding:10px 20px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none}
-.tab:hover{color:var(--text)}
-.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.tab-badge{display:inline-block;background:var(--warn-dim);color:var(--warn);border:1px solid rgba(245,166,35,.3);border-radius:10px;font-size:9px;padding:1px 6px;margin-left:6px;vertical-align:middle}
-.tab-badge.green{background:var(--accent-dim);color:var(--accent);border-color:var(--accent-glow)}
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 20px}
-.stat-label{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px}
-.stat-value{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--accent);line-height:1}
-.stat-sub{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:4px}
-.section-title{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px}
-.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow-x:auto;margin-bottom:24px}
-table{width:100%;border-collapse:collapse}
-th{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);padding:9px 12px;text-align:left;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap}
-td{font-size:13px;padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text)}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:rgba(255,255,255,.02)}
-.badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:2px;letter-spacing:.04em}
-.badge-green{background:var(--green-dim);color:var(--green);border:1px solid var(--accent-glow)}
-.badge-red{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,95,95,.3)}
-.badge-yellow{background:var(--warn-dim);color:var(--warn);border:1px solid rgba(245,166,35,.3)}
-.badge-gray{background:var(--surface2);color:var(--text-muted);border:1px solid var(--border)}
-.badge-purple{background:var(--purple-dim);color:var(--purple);border:1px solid rgba(124,106,247,.3)}
-.accuracy-bar{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;width:80px;display:inline-block;vertical-align:middle}
-.accuracy-fill{height:100%;border-radius:3px}
-.dis-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:12px;overflow:hidden}
-.dis-header{background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
-.dis-body{display:grid;grid-template-columns:1fr 1fr;gap:0}
-.dis-col{padding:14px 16px}
-.dis-col:first-child{border-right:1px solid var(--border)}
-.dis-col-label{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.dis-field{margin-bottom:8px}
-.dis-field-lbl{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-bottom:2px}
-.dis-field-val{font-size:13px}
-.dis-field-val.diff{color:var(--warn);font-weight:600}
-.gold-form{padding:12px 16px;background:var(--surface2);border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.gold-form label{font-family:var(--mono);font-size:10px;color:var(--text-muted)}
-.gold-form select{width:160px;font-size:12px;padding:5px 8px}
-.gold-form button{padding:5px 14px;font-size:11px}
-.seed-banner{background:var(--warn-dim);border:1px solid rgba(245,166,35,.35);border-radius:6px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.seed-info h3{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--warn);margin-bottom:4px}
-.seed-info p{font-family:var(--mono);font-size:11px;color:var(--text-muted);line-height:1.5}
-code{background:var(--surface2);padding:1px 5px;border-radius:2px;font-size:10px}
-.loading-overlay{display:none;position:fixed;inset:0;background:rgba(15,15,15,.7);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:12px}
-.loading-overlay.active{display:flex}
-.loading-overlay p{font-family:var(--mono);font-size:13px;color:var(--text-muted)}
-.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-#toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:12px 18px;font-family:var(--mono);font-size:12px;color:var(--text);opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;z-index:999}
-#toast.show{opacity:1;transform:translateY(0)}
-#toast.success{border-color:var(--accent-glow);color:var(--accent)}
-#toast.error{border-color:rgba(255,95,95,.3);color:var(--red)}
-.flag-row{background:rgba(245,166,35,.06) !important}
-.deepdive-row{background:rgba(255,95,95,.06) !important}
+  main { flex: 1; padding: 20px 32px; max-width: 860px; margin: 0 auto; width: 100%; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* LOGIN */
+  #screen-login { display: none; align-items: center; justify-content: center; min-height: calc(100vh - 56px); }
+  #screen-login.active { display: flex; }
+
+  .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 48px; width: 420px; text-align: center; }
+  .login-card .tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; background: var(--accent-dim); border: 1px solid var(--accent-glow); padding: 3px 10px; border-radius: 2px; display: inline-block; margin-bottom: 16px; }
+  .login-card h2 { font-family: var(--mono); font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .login-card p { color: var(--text-muted); font-size: 13px; margin-bottom: 28px; line-height: 1.6; }
+
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 28px; }
+  .info-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; text-align: left; }
+  .info-item .info-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 3px; }
+  .info-item .info-value { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text); }
+
+  .google-btn { width: 100%; background: #fff; color: #333; border: none; border-radius: 4px; padding: 12px 20px; font-family: var(--sans); font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.15s; }
+  .google-btn:hover { background: #f0f0f0; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+  /* ALREADY DONE */
+  #screen-done { display: none; align-items: center; justify-content: center; min-height: calc(100vh - 56px); }
+  #screen-done.active { display: flex; }
+  .done-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 48px; max-width: 480px; text-align: center; }
+  .done-icon { font-size: 40px; margin-bottom: 16px; }
+  .done-card h2 { font-family: var(--mono); font-size: 18px; margin-bottom: 8px; color: var(--accent); }
+  .done-card p { color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+
+  /* ASSESSMENT */
+  .assessment-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; gap: 20px; }
+  .task-meta h2 { font-family: var(--mono); font-size: 12px; color: var(--text-muted); font-weight: 400; margin-bottom: 6px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .battery-id { font-family: var(--mono); font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: 0.04em; }
+
+  .progress-wrap { text-align: right; flex-shrink: 0; }
+  .progress-label { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+  .progress-bar-outer { width: 180px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+  .progress-bar-inner { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
+  .progress-count { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+
+  .task-counter { font-family: var(--mono); font-size: 11px; color: var(--text-muted); background: var(--surface2); border: 1px solid var(--border); padding: 4px 10px; border-radius: 3px; margin-bottom: 16px; display: inline-block; }
+
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 16px; }
+
+  .field-group { margin-bottom: 10px; }
+  label { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+  input[type="text"], select, textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-family: var(--sans); font-size: 14px; padding: 7px 12px; outline: none; transition: border-color 0.15s; appearance: none; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+  select option { background: var(--surface2); }
+  textarea { resize: vertical; min-height: 52px; line-height: 1.5; }
+  textarea::placeholder { color: var(--text-dim); }
+
+  .conditional-fields { background: var(--accent-dim); border: 1px solid var(--accent-glow); border-radius: 4px; padding: 10px; margin-top: -4px; margin-bottom: 10px; display: none; }
+  .conditional-fields.visible { display: block; }
+  .conditional-fields .field-group { margin-bottom: 16px; }
+  .conditional-fields .field-group:last-child { margin-bottom: 0; }
+  .conditional-label { font-family: var(--mono); font-size: 10px; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .conditional-label::before { content: '↳'; font-size: 12px; }
+
+  .checkbox-field { display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 7px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; transition: all 0.15s; }
+  .checkbox-field:hover { border-color: var(--border-bright); }
+  .checkbox-field input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+  .checkbox-label-text { font-size: 13px; color: var(--text); user-select: none; line-height: 1.4; }
+
+  .form-divider { height: 1px; background: var(--border); margin: 10px 0; }
+
+  .btn-primary { background: var(--accent); color: #fff; border: none; border-radius: 4px; padding: 11px 24px; font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s; text-transform: uppercase; }
+  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .form-actions { display: flex; gap: 12px; margin-top: 12px; align-items: center; }
+  .timer-badge { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-left: auto; background: var(--surface2); border: 1px solid var(--border); padding: 5px 10px; border-radius: 3px; }
+
+  /* RESULTS SCREEN */
+  #screen-results { display: none; align-items: flex-start; justify-content: center; min-height: calc(100vh - 56px); padding: 40px 0; }
+  #screen-results.active { display: flex; }
+
+  .results-wrap { width: 100%; max-width: 760px; }
+
+  .score-hero { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 40px; text-align: center; margin-bottom: 24px; position: relative; overflow: hidden; }
+  .score-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, var(--accent-dim) 0%, transparent 70%); pointer-events: none; }
+  .score-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; }
+  .score-number { font-family: var(--mono); font-size: 72px; font-weight: 600; line-height: 1; color: var(--text); margin-bottom: 4px; }
+  .score-number span { color: var(--accent); }
+  .score-sub { font-family: var(--mono); font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .score-bar-outer { width: 100%; max-width: 320px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin: 0 auto; }
+  .score-bar-inner { height: 100%; border-radius: 3px; transition: width 1s ease; }
+
+  .results-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  .result-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 16px; text-align: center; }
+  .result-stat .rs-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .result-stat .rs-value { font-family: var(--mono); font-size: 24px; font-weight: 600; }
+  .rs-value.green { color: var(--green); }
+  .rs-value.red { color: var(--red); }
+  .rs-value.warn { color: var(--warn); }
+
+  .section-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+  .breakdown-table { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 24px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); padding: 8px 10px; text-align: left; background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { font-size: 13px; padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .badge { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 2px; letter-spacing: 0.04em; }
+  .badge-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,212,160,0.3); }
+  .badge-red { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,95,95,0.3); }
+  .badge-yellow { background: var(--warn-dim); color: var(--warn); border: 1px solid rgba(245,166,35,0.3); }
+  .badge-gray { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+
+  .pts-cell { font-family: var(--mono); font-size: 12px; font-weight: 600; }
+
+  /* ADMIN */
+  .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  .admin-header h2 { font-family: var(--mono); font-size: 18px; font-weight: 600; }
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 20px; }
+  .stat-card .stat-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .stat-card .stat-value { font-family: var(--mono); font-size: 28px; font-weight: 600; color: var(--accent); line-height: 1; }
+
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; margin-bottom: 28px; }
+
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 12px 18px; font-family: var(--mono); font-size: 12px; color: var(--text); opacity: 0; transform: translateY(8px); transition: all 0.2s; pointer-events: none; z-index: 999; }
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.success { border-color: rgba(124,106,247,0.4); color: var(--accent); }
+  #toast.error { border-color: rgba(255,95,95,0.3); color: var(--red); }
+
+  .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(15,15,15,0.7); z-index: 200; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+  .loading-overlay.active { display: flex; }
+  .loading-overlay p { font-family: var(--mono); font-size: 13px; color: var(--text-muted); }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
-<header>
-  <div class="logo">CF<span>/</span>CONSENSUS</div>
-  <div class="hdr-r">
-    <span class="user-badge" id="header-email"></span>
-    <button class="btn-ghost" id="btn-admin-toggle">Admin View</button>
-    <button class="btn-ghost" id="btn-logout">Sign out</button>
-  </div>
-</header>
 
-<main>
-<!-- LOGIN -->
-<div class="screen" id="screen-login">
-  <div class="login-card">
-    <h2>Consensus Labeling</h2>
-    <p>Second-pass quality validation for the battery labeling dataset. Sign in with your CloudFactory account.</p>
-    <button class="google-btn" id="btn-signin">
-      <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
-      Continue with Google
-    </button>
-    <p style="color:var(--text-dim);font-size:11px;margin-top:16px;font-family:var(--mono)">@cloudfactory.com or @es.cloudfactory.com</p>
-  </div>
-</div>
-
-<!-- TASK -->
-<div class="screen" id="screen-task">
-  <div class="task-header">
-    <div>
-      <div style="font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Battery ID</div>
-      <div class="battery-id-display" id="display-battery-id">—</div>
+<div id="app" style="display:flex;flex-direction:column;min-height:100vh">
+  <header>
+    <div class="logo">CF<span>/</span>ASSESS</div>
+    <div class="header-right">
+      <span class="user-badge" id="header-email"></span>
+      <button class="btn-ghost" id="btn-admin-toggle">Admin View</button>
+      <button class="btn-ghost" id="btn-logout">Sign out</button>
     </div>
-    <div style="display:flex;align-items:center;gap:20px">
-      <div class="timer-display" id="timer-display">00:00</div>
-      <div class="progress-wrap">
-        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-        <span id="progress-text">0 done</span>
+  </header>
+
+  <main>
+    <!-- LOGIN -->
+    <div class="screen" id="screen-login">
+      <div class="login-card">
+        <div class="tag">Assessment</div>
+        <h2>Battery Chemistry</h2>
+        <p>Sign in to begin your 15-task assessment. You have one attempt — take your time.</p>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Tasks</div>
+            <div class="info-value">15</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Attempts</div>
+            <div class="info-value">1 only</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Scoring</div>
+            <div class="info-value">100 pts each</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Results</div>
+            <div class="info-value">Instant</div>
+          </div>
+        </div>
+        <button class="google-btn" id="btn-google-signin">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+          Continue with Google
+        </button>
+        <p style="color:var(--text-dim);font-size:11px;margin-top:16px;font-family:var(--mono);">Sign in with your @es.cloudfactory.com Google account.</p>
       </div>
     </div>
-  </div>
-  <div class="form-card">
-    <div class="field">
-      <label>Label</label>
-      <select id="field-label">
-        <option value="">— Select label —</option>
-        <option>Lithium</option><option>NiCd</option><option>NiMH</option>
-        <option>Lead</option><option>Alkaline</option><option>Zinc-Carbon</option>
-        <option>Mercury</option><option>Unknown</option><option>Data Error</option>
-      </select>
-    </div>
-    <div class="field" id="field-sublabel-wrap" style="display:none">
-      <label>Sub-label</label>
-      <select id="field-sublabel">
-        <option value="">— Select sub-label —</option>
-        <option>Li-ion</option><option>Li Primary</option><option>Solid-state</option><option>Unknown</option>
-      </select>
-    </div>
-    <div class="field" id="field-lfp-wrap" style="display:none">
-      <label>LFP (Lithium Iron Phosphate)?</label>
-      <select id="field-lfp">
-        <option value="">— Select —</option>
-        <option>Yes</option><option>No</option><option>Unknown</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Evidence <span style="color:var(--red)">*</span></label>
-      <div class="template-row">
-        <select id="template-select"><option value="">Use a template…</option></select>
-        <button class="btn-secondary" id="btn-use-template" style="padding:8px 14px;font-size:11px">Use</button>
-      </div>
-      <textarea id="field-evidence" placeholder="Describe the evidence used to determine the battery type…" rows="3"></textarea>
-    </div>
-    <div class="field">
-      <label>Evidence URL <span style="color:var(--text-dim);font-weight:400">(optional)</span></label>
-      <input type="text" id="field-evidence-url" placeholder="https://…" />
-    </div>
-    <div class="field">
-      <div class="checkbox-row">
-        <label class="checkbox-label"><input type="checkbox" id="field-text-logo"> Text / Logo visible</label>
-        <label class="checkbox-label"><input type="checkbox" id="field-needs-review"> Needs review</label>
+
+    <!-- ALREADY COMPLETED -->
+    <div class="screen" id="screen-done">
+      <div class="done-card">
+        <div class="done-icon">◎</div>
+        <h2>Already completed</h2>
+        <p>You've already submitted this assessment. Only one attempt is allowed. Contact your project manager if you think this is an error.</p>
       </div>
     </div>
-    <div class="form-actions">
-      <button class="btn-primary" id="btn-submit">Submit →</button>
-    </div>
-  </div>
-</div>
 
-<!-- DONE -->
-<div class="screen" id="screen-done">
-  <div class="done-card">
-    <div class="done-icon">✓</div>
-    <h2>All tasks complete</h2>
-    <p style="color:var(--text-muted);font-size:13px;margin-top:8px">Your consensus labels have been submitted. Thank you.</p>
-    <div class="done-stats">
-      <div class="done-stat"><div class="done-stat-val" id="done-completed">0</div><div class="done-stat-lbl">Completed</div></div>
-      <div class="done-stat"><div class="done-stat-val" id="done-agreed">0</div><div class="done-stat-lbl">Agreed</div></div>
-      <div class="done-stat"><div class="done-stat-val" id="done-disagreed">0</div><div class="done-stat-lbl">Disagreed</div></div>
-    </div>
-  </div>
-</div>
+    <!-- ASSESSMENT -->
+    <div class="screen" id="screen-assess">
+      <div class="assessment-header">
+        <div class="task-meta">
+          <h2>Battery Identifier</h2>
+          <div class="battery-id" id="display-battery-id">—</div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label">Progress</div>
+          <div class="progress-bar-outer">
+            <div class="progress-bar-inner" id="progress-bar" style="width:0%"></div>
+          </div>
+          <div class="progress-count" id="progress-count">Task 1 of 15</div>
+        </div>
+      </div>
 
-<!-- NOT SEEDED -->
-<div class="screen" id="screen-not-seeded">
-  <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px)">
-    <div class="done-card">
-      <div class="done-icon" style="font-size:32px">⏳</div>
-      <h2 style="color:var(--warn)">Queue not ready yet</h2>
-      <p style="color:var(--text-muted);font-size:13px;margin-top:8px;line-height:1.6">The consensus task queue hasn't been seeded yet.<br>An admin needs to sign in and click <strong>Run seed</strong> first.</p>
-      <div style="margin-top:24px;display:flex;gap:10px;justify-content:center">
-        <button class="btn-secondary" onclick="loadNextTask()" style="display:inline-block">↻ Check again</button>
-        <button class="btn-ghost" id="btn-goto-admin-ns" style="display:inline-block">Admin view</button>
+      <div class="form-card">
+        <div class="field-group">
+          <label>Label *</label>
+          <select id="field-label">
+            <option value="">— Select label —</option>
+            <option>Lithium</option>
+            <option>NiMH</option>
+            <option>NiCd</option>
+            <option>Lead</option>
+            <option>Alkaline</option>
+            <option>Zinc-Carbon</option>
+            <option>Silver</option>
+            <option>Mercury</option>
+            <option>Arsenic</option>
+            <option>Unknown</option>
+            <option>Data Error</option>
+          </select>
+        </div>
+
+        <div class="conditional-fields" id="lithium-fields">
+          <div class="conditional-label">Lithium sub-classification</div>
+          <div class="field-group">
+            <label>Lithium Sub-Label *</label>
+            <select id="field-sublabel">
+              <option value="">— Select sub-label —</option>
+              <option>Li-ion</option>
+              <option>Li Primary</option>
+              <option>Solid-state</option>
+              <option>Unknown</option>
+            </select>
+          </div>
+          <div class="conditional-fields" id="lfp-field" style="margin-top:0;margin-bottom:0;">
+            <div class="conditional-label">LFP classification</div>
+            <div class="field-group" style="margin-bottom:0">
+              <label>LFP (Lithium Iron Phosphate) *</label>
+              <select id="field-lfp">
+                <option value="">— Select —</option>
+                <option>Yes</option>
+                <option>No</option>
+                <option>Unknown</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <div class="field-group">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <label style="margin-bottom:0">Evidence *</label>
+            <select id="template-select" style="background:var(--surface2);border:1px solid var(--border-bright);border-radius:3px;color:var(--text-muted);font-size:11px;padding:3px 8px;font-family:var(--mono);cursor:pointer;max-width:220px;">
+              <option value="">+ Insert template...</option>
+            </select>
+          </div>
+          <textarea id="field-evidence" placeholder="Describe the evidence supporting your label."></textarea>
+        </div>
+
+        <div class="field-group">
+          <label>Evidence URL <span style="color:var(--text-dim);font-size:10px;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <textarea id="field-evidence-url" placeholder="https://..." style="min-height:36px;font-family:var(--mono);font-size:12px;"></textarea>
+        </div>
+
+        <div class="field-group">
+          <label>Text / Logo Visible</label>
+          <label class="checkbox-field" for="field-visible">
+            <input type="checkbox" id="field-visible" />
+            <span class="checkbox-label-text">The battery type text or logo is clearly visible in the image</span>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <label>Needs Review</label>
+          <label class="checkbox-field" for="field-needs-review">
+            <input type="checkbox" id="field-needs-review" />
+            <span class="checkbox-label-text">Flag this entry for quality review</span>
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-primary" id="btn-next">Next Task →</button>
+          <span class="timer-badge" id="timer-display">00:00</span>
+        </div>
       </div>
     </div>
-  </div>
+
+    <!-- RESULTS -->
+    <div class="screen" id="screen-results">
+      <div class="results-wrap" style="max-width:520px;margin:0 auto;padding-top:60px">
+        <div class="score-hero">
+          <div class="score-tag">Assessment Complete</div>
+          <div class="score-number" id="score-display">0<span>/100</span></div>
+          <div class="score-sub" id="score-sub">Calculating...</div>
+          <div class="score-bar-outer">
+            <div class="score-bar-inner" id="score-bar" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="results-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="result-stat">
+            <div class="rs-label">Correct</div>
+            <div class="rs-value green" id="stat-correct">0</div>
+          </div>
+          <div class="result-stat">
+            <div class="rs-label">Partial</div>
+            <div class="rs-value warn" id="stat-partial">0</div>
+          </div>
+          <div class="result-stat">
+            <div class="rs-label">Incorrect</div>
+            <div class="rs-value red" id="stat-incorrect">0</div>
+          </div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px;text-align:center;margin-top:16px">
+          <p style="color:var(--text-muted);font-size:13px;line-height:1.7">Your results have been recorded. Your project manager will be in touch with feedback. You may now close this window.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="screen" id="screen-admin">
+      <div class="admin-header">
+        <h2>Assessment Dashboard</h2>
+        <div style="display:flex;gap:10px">
+          <button class="btn-ghost" id="btn-refresh" style="display:inline-block">↻ Refresh</button>
+          <button class="btn-ghost" id="btn-send-all" style="display:inline-block">✉ Send Results to All</button>
+          <button class="btn-ghost" id="btn-manage-admins" style="display:inline-block">⚙ Admins</button>
+          <button class="btn-primary" id="btn-export">↓ Export Results</button>
+        </div>
+      </div>
+
+      <!-- Admin Management Panel -->
+      <div id="admin-mgmt-panel" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px;margin-bottom:24px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <span style="font-family:var(--mono);font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);">Manage Admins</span>
+          <button class="btn-ghost" id="btn-close-admin-mgmt" style="display:inline-block;padding:3px 10px;font-size:10px;">✕ Close</button>
+        </div>
+        <div id="admin-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;min-height:32px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input type="email" id="input-new-admin" placeholder="new.admin@cloudfactory.com" style="flex:1;font-size:13px;" />
+          <button class="btn-primary" id="btn-add-admin" style="white-space:nowrap;">+ Add Admin</button>
+        </div>
+        <p style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:8px;">Changes take effect immediately. You cannot remove yourself.</p>
+      </div>
+
+      <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
+        <div class="stat-card">
+          <div class="stat-label">Total Assessed</div>
+          <div class="stat-value" id="stat-total">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg Score</div>
+          <div class="stat-value" id="stat-avg">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Top Score</div>
+          <div class="stat-value" id="stat-top">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pass Rate (≥70)</div>
+          <div class="stat-value" id="stat-pass">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">CWs Passed</div>
+          <div class="stat-value" id="stat-cw-passed">—</div>
+          <div class="stat-sub" id="stat-cw-sub" style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:4px;"></div>
+        </div>
+      </div>
+
+      <div class="section-title">Annotator Results</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Score</th>
+              <th>Correct</th>
+              <th>Partial</th>
+              <th>Incorrect</th>
+              <th>Time Taken</th>
+              <th>Submitted</th>
+              <th>Result</th>
+              <th>Send</th>
+              <th>Reset</th>
+            </tr>
+          </thead>
+          <tbody id="admin-tbody">
+            <tr><td colspan="9" style="color:var(--text-dim);text-align:center;padding:24px;">No results yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
 </div>
-
-<!-- ADMIN -->
-<div class="screen" id="screen-admin">
-  <div class="admin-header">
-    <h2>Consensus Dashboard</h2>
-    <div class="admin-btn-row">
-      <button class="btn-secondary" id="btn-refresh">↻ Refresh</button>
-      <button class="btn-secondary" id="btn-export">↓ Export</button>
-      <button class="btn-primary" id="btn-back-to-task" style="background:var(--surface2);color:var(--text);border:1px solid var(--border)">← Back to tasks</button>
-    </div>
-  </div>
-
-  <!-- Seed banner -->
-  <div class="seed-banner" id="seed-banner">
-    <div class="seed-info">
-      <h3>⚑ Seed consensus queue</h3>
-      <p>Reads the <code>tasks</code> tab, draws a stratified sample of <strong>774 tasks</strong> (±3.5% margin, 95% CI), and writes them to the <code>consensus_tasks</code> tab. Safe to re-run — already-seeded battery IDs are skipped.</p>
-    </div>
-    <button class="btn-primary" id="btn-seed" style="white-space:nowrap;flex-shrink:0;background:var(--warn);color:#0f0f0f">⚑ Run seed</button>
-  </div>
-
-  <div class="stats-grid">
-    <div class="stat-card"><div class="stat-label">Seeded</div><div class="stat-value" id="s-seeded">—</div></div>
-    <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value" id="s-completed">—</div><div class="stat-sub" id="s-pct">—</div></div>
-    <div class="stat-card"><div class="stat-label">Agreement rate</div><div class="stat-value" id="s-agree">—</div></div>
-    <div class="stat-card"><div class="stat-label">CWs flagged</div><div class="stat-value" id="s-flagged" style="color:var(--warn)">—</div><div class="stat-sub" id="s-deepdive" style="color:var(--red)">—</div></div>
-  </div>
-
-  <div class="tabs">
-    <button class="tab active" id="tab-accuracy" onclick="switchTab('accuracy')">Accuracy by stratum</button>
-    <button class="tab" id="tab-cw" onclick="switchTab('cw')">CW performance <span class="tab-badge" id="badge-flag">0</span></button>
-    <button class="tab" id="tab-disagree" onclick="switchTab('disagree')">Disagreements <span class="tab-badge" id="badge-dis">0</span></button>
-  </div>
-
-  <!-- Accuracy tab -->
-  <div id="pane-accuracy">
-    <div class="section-title">Agreement rate by label stratum</div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Stratum</th><th>Pool</th><th>Sampled</th><th>Completed</th><th>Agreements</th><th>Disagreements</th><th>Agreement %</th><th>Margin of error</th></tr></thead>
-        <tbody id="tbody-accuracy"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- CW performance tab -->
-  <div id="pane-cw" style="display:none">
-    <div class="section-title">Per-annotator error count — flag if ≥2 disagreements, deep-dive if ≥3 or &gt;25% error rate</div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Annotator</th><th>Tasks sampled</th><th>Completed</th><th>Agreed</th><th>Disagreed</th><th>Error rate</th><th>Status</th></tr></thead>
-        <tbody id="tbody-cw"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Disagreements tab -->
-  <div id="pane-disagree" style="display:none">
-    <div class="section-title">Set gold standard label for each disagreement — used to determine which annotator was wrong</div>
-    <div id="dis-list"></div>
-  </div>
-</div>
-</main>
 
 <div class="loading-overlay" id="loading-overlay">
   <div class="spinner"></div>
-  <p id="loading-text">Loading…</p>
+  <p id="loading-text">Loading...</p>
 </div>
 <div id="toast"></div>
 
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <script>
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // CONFIG
+// ═══════════════════════════════════════════════
+// ─── Shared config loader ────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
+// CF BATTERY CONFIG LOADER  v1.0
+// Reads from a dedicated config-only Google Sheet (private).
+// Called once after OAuth completes. All three apps share this.
+// ═══════════════════════════════════════════════════════════════
+
+// The ONE hardcoded value across all apps — the config sheet ID.
+// This never changes. Everything else comes from the sheet.
+const CONFIG_SHEET_ID = '1axlYSB3d5H0tDO4M_UA73QmKUY60xkzTrUi2Wfz1cls';
+
+// Defaults — used if config sheet is unreachable or key is missing
+const CONFIG_DEFAULTS = {
+  admin_emails:                  'ayush.siddhi@cloudfactory.com, robina@cloudfactory.com',
+  labeling_sheet_id:             '1iQ7-zWXr39rz06i78cijr61WFBBeoYAJ2ppCBr6qa2U',
+  assessment_sheet_id:           '1o1Xd0KOIwmHSwf9KhF6UR8DzQV6mj7fEuUQjpUb1NWE',
+  consensus_sheet_id:            '1iQ7-zWXr39rz06i78cijr61WFBBeoYAJ2ppCBr6qa2U',
+  assessment_version:            'v1',
+  assessment_gold_tab:           'ground_truth_v1',
+  assessment_passing_score:      '70',
+  consensus_confidence:          '0.95',
+  consensus_margin_error:        '0.035',
+  consensus_accuracy_target:     '0.95',
+  consensus_flag_threshold:      '2',
+  consensus_deepdive_threshold:  '3',
+  consensus_deepdive_error_rate: '0.25',
+};
+
+async function loadRemoteConfig(accessToken) {
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG_SHEET_ID}/values/config!A:B`;
+    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const rows = (data.values || []).slice(1); // skip header
+    const cfg = { ...CONFIG_DEFAULTS };
+    rows.forEach(r => { if (r[0] && r[1] !== undefined) cfg[r[0].trim()] = r[1].trim(); });
+    return cfg;
+  } catch(e) {
+    console.warn('Config sheet unreachable — using defaults:', e.message);
+    return { ...CONFIG_DEFAULTS };
+  }
+}
+
+function parseConfig(raw) {
+  return {
+    // Auth
+    adminEmails: raw.admin_emails.split(',').map(e => e.trim()).filter(Boolean),
+
+    // Sheet IDs per app
+    labelingSheetId:    raw.labeling_sheet_id,
+    assessmentSheetId:  raw.assessment_sheet_id,
+    consensusSheetId:   raw.consensus_sheet_id,
+
+    // Assessment
+    assessmentVersion:      raw.assessment_version,
+    assessmentGoldTab:      raw.assessment_gold_tab,
+    assessmentPassingScore: parseInt(raw.assessment_passing_score) || 70,
+
+    // Consensus
+    consensusSampleSize:        parseInt(raw.consensus_sample_size) || 774,
+    consensusFlagThreshold:     parseInt(raw.consensus_flag_threshold) || 2,
+    consensusDeepDiveThreshold: parseInt(raw.consensus_deepdive_threshold) || 3,
+    consensusDeepDiveErrorRate: parseFloat(raw.consensus_deepdive_error_rate) || 0.25,
+  };
+}
+
+const CLIENT_ID = '92798755923-ah1qkitovkkq4qcs53rv6srpu86106lk.apps.googleusercontent.com';
+const SCOPES    = 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/gmail.send';
+let APP_CONFIG  = null;
+
+// CONFIG proxy — backward-compatible
 const CONFIG = {
-  CLIENT_ID: '92798755923-ah1qkitovkkq4qcs53rv6srpu86106lk.apps.googleusercontent.com',
-  SHEET_ID:  '1iQ7-zWXr39rz06i78cijr61WFBBeoYAJ2ppCBr6qa2U',
-  ADMIN_EMAILS: ['ayush.siddhi@cloudfactory.com','robina@cloudfactory.com'],
-  SCOPES: 'openid email profile https://www.googleapis.com/auth/spreadsheets'
-};
-(function(){ try { const s=localStorage.getItem('cf_battery_config'); if(s){ const p=JSON.parse(s); if(p.ADMIN_EMAILS) CONFIG.ADMIN_EMAILS=p.ADMIN_EMAILS; } } catch(e){} })();
-
-const SHEETS = { TASKS:'tasks', CONSENSUS:'consensus_tasks', ANN:'consensus_annotators' };
-
-// Column indices for consensus_tasks (0-based)
-// battery_id(0) orig_label(1) orig_sub(2) orig_lfp(3) orig_annotator(4) stratum(5)
-// pass1_row(6) assigned_to(7) status(8) assigned_at(9)
-// label(10) sublabel(11) lfp(12) evidence(13) evidence_url(14)
-// text_logo_visible(15) submitted_at(16) time_taken_seconds(17)
-// consensus_status(18) gold_label(19) gold_set_by(20)
-
-const STRATA_POOLS = {
-  'Lithium — Li-ion LFP unknown':3365,'Lithium — Li-ion non-LFP':2945,
-  'NiCd':1240,'Data Error':623,'Lithium — Li-ion LFP':132,
-  'NiMH':97,'Lithium — sublabel unknown':42,'Lithium — Li Primary':10,
-  'Lead':6,'Alkaline':1,'Zinc-Carbon':1,'Mercury':1
+  CLIENT_ID,
+  get SHEET_ID()      { return APP_CONFIG ? APP_CONFIG.assessmentSheetId : '1o1Xd0KOIwmHSwf9KhF6UR8DzQV6mj7fEuUQjpUb1NWE'; },
+  get ADMIN_EMAILS()  { return APP_CONFIG ? APP_CONFIG.adminEmails : ['ayush.siddhi@cloudfactory.com']; },
+  set ADMIN_EMAILS(v) { if (APP_CONFIG) APP_CONFIG.adminEmails = v; },
+  get PASSING_SCORE() { return APP_CONFIG ? APP_CONFIG.assessmentPassingScore : 70; },
+  SCOPES,
 };
 
-const TEMPLATES = [
-  'The presence of visible Li-ion text in {img}.jpg provides sufficient evidence.',
-  'The presence of visible Li-ion recycling logo in {img}.jpg provides sufficient evidence.',
-  'The presence of visible Ni-Cd text in {img}.jpg provides sufficient evidence.',
-  'The presence of visible NiMH text in {img}.jpg provides sufficient evidence.',
-  'Unable to confirm battery type. [label obscured / no visible markings].',
-  'Data error — product missing in {img}.jpg. Marked as data error.',
-  'Web search confirms battery composition as {type}.',
-  'The battery label in {img}.jpg clearly states {type}.',
-  'Image shows different product from dataset — marked as data error.',
-  'No visible text or logo in any image. Cannot determine battery type.',
+const SHEETS = { RESPONSES: 'responses', ANNOTATORS: 'annotators' };
+
+// ═══════════════════════════════════════════════
+// GROUND TRUTH — loaded from sheet after OAuth
+// Populated by loadGroundTruth() on sign-in
+// ═══════════════════════════════════════════════
+let GROUND_TRUTH = [];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let state = {
+  user: null,
+  accessToken: null,
+  isAdmin: false,
+  currentTaskIndex: 0,
+  answers: [],        // collected answers per task
+  taskStartTime: null,
+  timerInterval: null,
+  totalStartTime: null,
+};
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className = '', 3000);
+}
+
+function setLoading(show, text = 'Loading...') {
+  document.getElementById('loading-text').textContent = text;
+  document.getElementById('loading-overlay').classList.toggle('active', show);
+}
+
+function formatSeconds(s) {
+  if (!s || s < 0) return '—';
+  const m = Math.floor(s / 60), sec = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(Math.floor(sec)).padStart(2,'0')}`;
+}
+
+// ═══════════════════════════════════════════════
+// SHEETS API
+// ═══════════════════════════════════════════════
+async function sheetsGet(range) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}`;
+  const res = await fetch(url, { headers: { Authorization: 'Bearer ' + state.accessToken } });
+  const data = await res.json();
+  if (data.error && data.error.code === 401) { await refreshToken(); return sheetsGet(range); }
+  return data;
+}
+
+async function sheetsAppend(range, values) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values })
+  });
+  const data = await res.json();
+  if (data.error && data.error.code === 401) { await refreshToken(); return sheetsAppend(range, values); }
+  return data;
+}
+
+async function sheetsUpdate(range, values) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values })
+  });
+  const data = await res.json();
+  if (data.error && data.error.code === 401) { await refreshToken(); return sheetsUpdate(range, values); }
+  return data;
+}
+
+async function sheetsBatchUpdate(requests) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}:batchUpdate`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requests })
+  });
+  return res.json();
+}
+
+async function refreshToken() {
+  return new Promise((resolve, reject) => {
+    const original = window._tokenClient.callback;
+    window._tokenClient.callback = (resp) => {
+      window._tokenClient.callback = original;
+      if (resp.error) { reject(new Error(resp.error)); return; }
+      state.accessToken = resp.access_token;
+      resolve();
+    };
+    // prompt: '' = silent refresh, no popup needed if user already has active Google session
+    window._tokenClient.requestAccessToken({ prompt: '' });
+  });
+}
+
+// Pre-emptively refresh token before submission to avoid mid-submit failure
+async function ensureFreshToken() {
+  try {
+    // Test token with a lightweight call
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}?fields=spreadsheetId`;
+    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + state.accessToken } });
+    if (res.status === 401) {
+      showToast('Refreshing session...', 'success');
+      await refreshToken();
+    }
+  } catch(e) {
+    console.warn('Token check failed:', e);
+  }
+}
+
+async function ensureSheets() {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}`;
+  const res = await fetch(url, { headers: { Authorization: 'Bearer ' + state.accessToken } });
+  const data = await res.json();
+  if (!data.sheets) throw new Error('Cannot access assessment sheet. Check sharing settings.');
+  const existing = data.sheets.map(s => s.properties.title);
+  const toCreate = [];
+  if (!existing.includes(SHEETS.RESPONSES)) toCreate.push({ addSheet: { properties: { title: SHEETS.RESPONSES } } });
+  if (!existing.includes(SHEETS.ANNOTATORS)) toCreate.push({ addSheet: { properties: { title: SHEETS.ANNOTATORS } } });
+  if (toCreate.length) {
+    await sheetsBatchUpdate(toCreate);
+    if (!existing.includes(SHEETS.RESPONSES)) {
+      await sheetsUpdate(`${SHEETS.RESPONSES}!A1`, [[
+        'email', 'battery_id', 'label_answer', 'sublabel_answer', 'lfp_answer',
+        'evidence', 'evidence_url', 'text_logo_visible', 'needs_review',
+        'label_correct', 'sublabel_correct', 'lfp_correct', 'points_earned', 'max_points'
+      ]]);
+    }
+    if (!existing.includes(SHEETS.ANNOTATORS)) {
+      await sheetsUpdate(`${SHEETS.ANNOTATORS}!A1`, [[
+        'email', 'score', 'correct', 'partial', 'incorrect', 'total_time_seconds', 'submitted_at', 'status'
+      ]]);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// SCORING
+// ═══════════════════════════════════════════════
+function scoreTask(truth, answer) {
+  const labelMatch = answer.label.toLowerCase() === truth.label.toLowerCase();
+
+  if (truth.label === 'Lithium') {
+    // Lithium: label 50%, sublabel 25%, lfp 25%
+    const labelPts = labelMatch ? 50 : 0;
+    const sublabelPts = labelMatch && answer.sublabel && truth.sublabel &&
+      answer.sublabel.toLowerCase() === truth.sublabel.toLowerCase() ? 25 : 0;
+    const lfpPts = labelMatch && answer.sublabel === truth.sublabel && answer.lfp && truth.lfp &&
+      answer.lfp.toLowerCase() === truth.lfp.toLowerCase() ? 25 : 0;
+    const total = labelPts + sublabelPts + lfpPts;
+    return {
+      points: total,
+      max: 100,
+      labelCorrect: labelPts > 0,
+      sublabelCorrect: sublabelPts > 0,
+      lfpCorrect: lfpPts > 0,
+      result: total === 100 ? 'correct' : total > 0 ? 'partial' : 'incorrect'
+    };
+  } else {
+    // Non-Lithium: label 100%
+    return {
+      points: labelMatch ? 100 : 0,
+      max: 100,
+      labelCorrect: labelMatch,
+      sublabelCorrect: null,
+      lfpCorrect: null,
+      result: labelMatch ? 'correct' : 'incorrect'
+    };
+  }
+}
+
+// ═══════════════════════════════════════════════
+// ASSESSMENT FLOW
+// ═══════════════════════════════════════════════
+function loadTask(index) {
+  const task = GROUND_TRUTH[index];
+  document.getElementById('display-battery-id').textContent = task.id;
+  document.getElementById('field-label').value = '';
+  document.getElementById('field-sublabel').value = '';
+  document.getElementById('field-lfp').value = '';
+  document.getElementById('field-evidence').value = '';
+  document.getElementById('field-evidence-url').value = '';
+  document.getElementById('field-visible').checked = false;
+  document.getElementById('field-needs-review').checked = false;
+  document.getElementById('lithium-fields').classList.remove('visible');
+  document.getElementById('lfp-field').classList.remove('visible');
+
+  const pct = (index / GROUND_TRUTH.length) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-count').textContent = `Task ${index + 1} of ${GROUND_TRUTH.length}`;
+
+  // Update next button label on last task
+  document.getElementById('btn-next').textContent = index === GROUND_TRUTH.length - 1 ? 'Submit Assessment ✓' : 'Next Task →';
+
+  // Start task timer
+  clearInterval(state.timerInterval);
+  state.taskStartTime = Date.now();
+  state.timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - state.taskStartTime) / 1000);
+    document.getElementById('timer-display').textContent = formatSeconds(elapsed);
+  }, 1000);
+}
+
+function handleNext() {
+  const label = document.getElementById('field-label').value;
+  const evidence = document.getElementById('field-evidence').value.trim();
+
+  if (!label) { showToast('Please select a label', 'error'); return; }
+  if (!evidence) { showToast('Evidence is required', 'error'); document.getElementById('field-evidence').focus(); return; }
+
+  if (label === 'Lithium') {
+    const sublabel = document.getElementById('field-sublabel').value;
+    if (!sublabel) { showToast('Please select a Lithium sub-label', 'error'); return; }
+    if ((sublabel === 'Li-ion' || sublabel === 'Solid-state') && !document.getElementById('field-lfp').value) {
+      showToast('Please select an LFP value', 'error'); return;
+    }
+  }
+
+  // Save answer
+  state.answers.push({
+    batteryId: GROUND_TRUTH[state.currentTaskIndex].id,
+    label,
+    sublabel: document.getElementById('field-sublabel').value,
+    lfp: document.getElementById('field-lfp').value,
+    evidence,
+    evidenceUrl: document.getElementById('field-evidence-url').value.trim(),
+    textLogoVisible: document.getElementById('field-visible').checked,
+    needsReview: document.getElementById('field-needs-review').checked,
+  });
+
+  state.currentTaskIndex++;
+
+  if (state.currentTaskIndex < GROUND_TRUTH.length) {
+    loadTask(state.currentTaskIndex);
+  } else {
+    clearInterval(state.timerInterval);
+    submitAssessment();
+  }
+}
+
+async function submitAssessment() {
+  setLoading(true, 'Preparing submission...');
+  await ensureFreshToken();
+  setLoading(true, 'Calculating your score...');
+  const totalTime = Math.floor((Date.now() - state.totalStartTime) / 1000);
+
+  // Score each task
+  let totalPoints = 0;
+  let correct = 0, partial = 0, incorrect = 0;
+  const scored = [];
+
+  for (let i = 0; i < GROUND_TRUTH.length; i++) {
+    const truth = GROUND_TRUTH[i];
+    const answer = state.answers[i];
+    const s = scoreTask(truth, answer);
+    totalPoints += s.points;
+    if (s.result === 'correct') correct++;
+    else if (s.result === 'partial') partial++;
+    else incorrect++;
+    scored.push({ ...answer, ...s, truth });
+  }
+
+  const finalScore = Math.round(totalPoints / GROUND_TRUTH.length);
+
+  try {
+    // Write all responses to sheet
+    console.log('Writing', scored.length, 'response rows to sheet...');
+    const responseRows = scored.map(s => [
+      state.user.email,
+      s.batteryId,
+      s.label,
+      s.sublabel || '',
+      s.lfp || '',
+      s.evidence,
+      s.evidenceUrl || '',
+      s.textLogoVisible ? 'Yes' : '',
+      s.needsReview ? 'Yes' : '',
+      s.labelCorrect ? 'Yes' : 'No',
+      s.sublabelCorrect === null ? 'N/A' : s.sublabelCorrect ? 'Yes' : 'No',
+      s.lfpCorrect === null ? 'N/A' : s.lfpCorrect ? 'Yes' : 'No',
+      s.points,
+      s.max
+    ]);
+    const appendRes = await sheetsAppend(`${SHEETS.RESPONSES}!A:N`, responseRows);
+    console.log('Responses append result:', JSON.stringify(appendRes));
+
+    const summaryRes = await sheetsAppend(`${SHEETS.ANNOTATORS}!A:H`, [[
+      state.user.email,
+      finalScore,
+      correct,
+      partial,
+      incorrect,
+      totalTime,
+      new Date().toISOString(),
+      'complete'
+    ]]);
+    console.log('Summary append result:', JSON.stringify(summaryRes));
+
+    if (appendRes.error || summaryRes.error) {
+      throw new Error(appendRes.error?.message || summaryRes.error?.message || 'Sheet write failed');
+    }
+
+    showResults(finalScore, correct, partial, incorrect);
+  } catch(e) {
+    showToast('Error saving results: ' + e.message, 'error');
+    console.error(e);
+  }
+  setLoading(false);
+}
+
+function showResults(score, correct, partial, incorrect) {
+  showScreen('results');
+
+  document.getElementById('score-display').innerHTML = `${score}<span>/100</span>`;
+  document.getElementById('score-sub').textContent =
+    score >= 90 ? 'Excellent work!' :
+    score >= CONFIG.PASSING_SCORE ? 'Good job — above pass threshold.' :
+    score >= 50 ? 'Below pass threshold — review required.' :
+    'Needs significant improvement.';
+
+  const bar = document.getElementById('score-bar');
+  bar.style.background = score >= CONFIG.PASSING_SCORE ? 'var(--green)' : score >= 50 ? 'var(--warn)' : 'var(--red)';
+  setTimeout(() => bar.style.width = score + '%', 100);
+
+  document.getElementById('stat-correct').textContent = correct;
+  document.getElementById('stat-partial').textContent = partial;
+  document.getElementById('stat-incorrect').textContent = incorrect;
+}
+
+// ═══════════════════════════════════════════════
+// ADMIN
+// ═══════════════════════════════════════════════
+async function loadAdminDashboard() {
+  setLoading(true, 'Loading dashboard...');
+  try {
+    const data = await sheetsGet(`${SHEETS.ANNOTATORS}!A:H`);
+    const rows = (data.values || []).slice(1);
+
+    const total = rows.length;
+    const scores = rows.map(r => parseFloat(r[1]) || 0);
+    const avg = total > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / total) : 0;
+    const top = total > 0 ? Math.max(...scores) : 0;
+    const pass = total > 0 ? rows.filter(r => parseFloat(r[1]) >= 70).length : 0;
+    const passRate = total > 0 ? Math.round((pass / total) * 100) + '%' : '—';
+
+    // CW passed = annotators who scored >= 70
+    const cwPassed = pass;
+    const cwTotal = total;
+
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-avg').textContent = total > 0 ? avg : '—';
+    document.getElementById('stat-top').textContent = total > 0 ? top : '—';
+    document.getElementById('stat-pass').textContent = passRate;
+    document.getElementById('stat-cw-passed').textContent = total > 0 ? cwPassed : '—';
+    document.getElementById('stat-cw-sub').textContent = total > 0 ? `of ${cwTotal} assessed` : '';
+
+    const tbody = document.getElementById('admin-tbody');
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" style="color:var(--text-dim);text-align:center;padding:24px;">No results yet</td></tr>';
+    } else {
+      const sorted = [...rows].sort((a, b) => (parseFloat(b[1]) || 0) - (parseFloat(a[1]) || 0));
+      tbody.innerHTML = sorted.map((r, idx) => {
+        const score = parseFloat(r[1]) || 0;
+        const passed = score >= CONFIG.PASSING_SCORE;
+        const emailSafe = r[0].replace(/'/g, "\'");
+        return `<tr>
+          <td style="font-family:var(--mono);font-size:12px">${r[0]}</td>
+          <td class="pts-cell" style="color:${score >= CONFIG.PASSING_SCORE ? 'var(--green)' : score >= 50 ? 'var(--warn)' : 'var(--red)'}">${score}</td>
+          <td style="color:var(--green)">${r[2] || 0}</td>
+          <td style="color:var(--warn)">${r[3] || 0}</td>
+          <td style="color:var(--red)">${r[4] || 0}</td>
+          <td style="font-family:var(--mono);font-size:12px">${formatSeconds(parseInt(r[5]))}</td>
+          <td style="font-size:12px;color:var(--text-muted)">${r[6] ? new Date(r[6]).toLocaleString() : '—'}</td>
+          <td><span class="badge ${passed ? 'badge-green' : 'badge-red'}">${passed ? 'Pass' : 'Fail'}</span></td>
+          <td><button class="btn-ghost" style="display:inline-block;padding:3px 10px;font-size:10px" onclick="sendResultEmail('${emailSafe}', ${score}, ${r[2]||0}, ${r[3]||0}, ${r[4]||0})">Send</button></td>
+          <td><button class="btn-ghost" style="display:inline-block;padding:3px 10px;font-size:10px;color:var(--warn);border-color:rgba(245,166,35,0.3)" onclick="resetAnnotator('${emailSafe}')">↺ Reset</button></td>
+        </tr>`;
+      }).join('');
+    }
+  } catch(e) {
+    showToast('Error loading dashboard: ' + e.message, 'error');
+  }
+  setLoading(false);
+}
+
+async function fetchAnnotatorResponses(email) {
+  const data = await sheetsGet(`${SHEETS.RESPONSES}!A:N`);
+  const rows = (data.values || []).slice(1).filter(r => r[0] === email);
+  return rows;
+}
+
+function buildEmailBody(email, score, correct, partial, incorrect, responseRows) {
+  const passed = score >= CONFIG.PASSING_SCORE;
+  const firstName = email.split('.')[0];
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+  // Build per-task breakdown with correct answers
+  let breakdown = '';
+  if (responseRows && responseRows.length > 0) {
+    breakdown = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TASK BREAKDOWN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+    responseRows.forEach((r, i) => {
+      const batteryId   = r[1] || '—';
+      const yourLabel   = r[2] || '—';
+      const yourSub     = r[3] || '';
+      const yourLfp     = r[4] || '';
+      const labelOk     = r[9]  === 'Yes';
+      const sublabelOk  = r[10] === 'Yes';
+      const lfpOk       = r[11] === 'Yes';
+      const sublabelNA  = r[10] === 'N/A';
+      const lfpNA       = r[11] === 'N/A';
+      const pts         = r[12] || '0';
+      const max         = r[13] || '100';
+
+      // Look up correct answer from GROUND_TRUTH
+      const truth = GROUND_TRUTH.find(t => t.id === batteryId) || {};
+      const corrLabel  = truth.label  || '—';
+      const corrSub    = truth.sublabel || '';
+      const corrLfp    = truth.lfp     || '';
+
+      const yourAnswer    = [yourLabel, yourSub, yourLfp].filter(Boolean).join(' › ');
+      const correctAnswer = [corrLabel, corrSub, corrLfp].filter(Boolean).join(' › ');
+      const result        = parseInt(pts) === parseInt(max) ? 'CORRECT' : parseInt(pts) > 0 ? 'PARTIAL' : 'INCORRECT';
+
+      // Per-component check marks
+      let checks = `Label : ${labelOk ? '✓' : '✗'}`;
+      if (!sublabelNA) checks += `  Sub-label : ${sublabelOk ? '✓' : '✗'}`;
+      if (!lfpNA)      checks += `  LFP : ${lfpOk ? '✓' : '✗'}`;
+
+      breakdown += `\nTask ${String(i+1).padStart(2,'0')} | ${batteryId}
+  Your answer : ${yourAnswer}
+  Correct     : ${correctAnswer}
+  ${checks}
+  Points      : ${pts}/${max} (${result})
+`;
+    });
+    breakdown += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  }
+
+  return `Hi ${cap(firstName)},
+
+Thank you for completing the Battery Chemistry Assessment. Here are your full results:
+
+━━━━━━━━━━━━━━━━━━━━━━
+SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━
+Overall Score:  ${score}/100
+Result:         ${passed ? '✓ PASS' : '✗ FAIL'}
+
+Correct:        ${correct} / 15
+Partial:        ${partial} / 15
+Incorrect:      ${incorrect} / 15
+━━━━━━━━━━━━━━━━━━━━━━
+${breakdown}
+
+${passed
+  ? 'Well done — you have met the required standard for battery chemistry labeling.'
+  : 'Unfortunately you did not meet the pass threshold of 70. Your project manager will be in touch with next steps.'}
+
+If you have any questions about your results, please reach out to your project manager.
+
+CloudFactory Assessment Team`;
+}
+
+async function sendResultEmail(toEmail, score, correct, partial, incorrect) {
+  setLoading(true, `Fetching responses for ${toEmail}...`);
+  try {
+    const responseRows = await fetchAnnotatorResponses(toEmail);
+    const subject = `Battery Chemistry Assessment — Your Results`;
+    const body = buildEmailBody(toEmail, score, correct, partial, incorrect, responseRows);
+
+    // Compose RFC 2822 message
+    const message = [
+      `To: ${toEmail}`,
+      `Subject: ${subject}`,
+      `Content-Type: text/plain; charset=utf-8`,
+      ``,
+      body
+    ].join('\n');
+
+    const encoded = btoa(unescape(encodeURIComponent(message)))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + state.accessToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ raw: encoded })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    showToast(`Result sent to ${toEmail}`, 'success');
+  } catch(e) {
+    showToast('Failed to send: ' + e.message, 'error');
+    console.error(e);
+  }
+  setLoading(false);
+}
+
+async function sendAllResults() {
+  const data = await sheetsGet(`${SHEETS.ANNOTATORS}!A:H`);
+  const rows = (data.values || []).slice(1);
+  if (rows.length === 0) { showToast('No results to send', 'error'); return; }
+
+  setLoading(true, `Sending to ${rows.length} annotators...`);
+  let sent = 0, failed = 0;
+  for (const r of rows) {
+    try {
+      await sendResultEmail(r[0], parseFloat(r[1])||0, parseInt(r[2])||0, parseInt(r[3])||0, parseInt(r[4])||0);
+      sent++;
+      await new Promise(res => setTimeout(res, 300)); // small delay to avoid rate limit
+    } catch(e) { failed++; }
+  }
+  setLoading(false);
+  showToast(`Sent ${sent} emails${failed > 0 ? `, ${failed} failed` : ''}`, 'success');
+}
+
+async function exportResults() {
+  setLoading(true, 'Exporting...');
+  try {
+    const [summaryData, responseData] = await Promise.all([
+      sheetsGet(`${SHEETS.ANNOTATORS}!A:H`),
+      sheetsGet(`${SHEETS.RESPONSES}!A:N`)
+    ]);
+
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.aoa_to_sheet(summaryData.values || []);
+    const ws2 = XLSX.utils.aoa_to_sheet(responseData.values || []);
+    XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Detailed Responses');
+    XLSX.writeFile(wb, `assessment_results_${new Date().toISOString().slice(0,10)}.xlsx`);
+    showToast('Export complete!');
+  } catch(e) {
+    showToast('Export failed: ' + e.message, 'error');
+  }
+  setLoading(false);
+}
+
+// ═══════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════
+function initTokenClient() {
+  window._tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CONFIG.CLIENT_ID,
+    scope: CONFIG.SCOPES,
+    callback: async (resp) => {
+      if (resp.error) { showToast('Sign in error: ' + resp.error, 'error'); return; }
+      state.accessToken = resp.access_token;
+
+      // Schedule silent token refresh every 45 minutes
+      clearInterval(window._tokenRefreshInterval);
+      window._tokenRefreshInterval = setInterval(async () => {
+        try {
+          await new Promise((resolve, reject) => {
+            const orig = window._tokenClient.callback;
+            window._tokenClient.callback = (r) => {
+              window._tokenClient.callback = orig;
+              if (r.error) reject(new Error(r.error));
+              else { state.accessToken = r.access_token; resolve(); }
+            };
+            window._tokenClient.requestAccessToken({ prompt: '' });
+          });
+          console.log('Token silently refreshed');
+        } catch(e) { console.warn('Silent refresh failed:', e); }
+      }, 45 * 60 * 1000);
+
+      // If we already have a user (token refresh), skip sign-in flow
+      if (state.user) return;
+
+      try {
+        const res = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+          headers: { Authorization: 'Bearer ' + resp.access_token }
+        });
+        const info = await res.json();
+        if (!info.email) throw new Error('No email returned');
+        await loadConfig(resp.access_token);
+        await loadGroundTruth();
+        await signInUser(info.email, info.name || info.email);
+      } catch(e) {
+        showToast('Could not get user info — please try again', 'error');
+      }
+    }
+  });
+}
+
+async function loadGroundTruth() {
+  // Reads ground truth from the tab named in config (e.g. ground_truth_v1)
+  // Tab lives in the assessment sheet.
+  // Columns: battery_id, label, sublabel, lfp, score_visible
+  const tab = APP_CONFIG ? APP_CONFIG.assessmentGoldTab : 'ground_truth_v1';
+  try {
+    const data = await sheetsGet(`${tab}!A:E`);
+    const rows = (data.values || []).slice(1).filter(r => r[0]);
+    GROUND_TRUTH = rows.map(r => ({
+      id:           r[0] || '',
+      label:        r[1] || '',
+      sublabel:     r[2] || '',
+      lfp:          r[3] || '',
+      scoreVisible: r[4] === 'true' ? true : r[4] === 'false' ? false : null,
+    }));
+    if (GROUND_TRUTH.length === 0) throw new Error('Empty ground truth tab: ' + tab);
+    console.log(`Loaded ${GROUND_TRUTH.length} ground truth tasks from "${tab}"`);
+  } catch(e) {
+    showToast('Failed to load ground truth: ' + e.message, 'error');
+    console.error(e);
+    throw e;
+  }
+}
+
+async function signInUser(email, name) {
+  state.user = { email, name };
+  state.isAdmin = CONFIG.ADMIN_EMAILS.includes(email);
+
+  document.getElementById('header-email').textContent = email;
+  document.getElementById('header-email').style.display = '';
+  document.getElementById('btn-logout').style.display = '';
+  if (state.isAdmin) document.getElementById('btn-admin-toggle').style.display = '';
+
+  setLoading(true, 'Checking assessment status...');
+  try {
+    await ensureSheets();
+
+    if (state.isAdmin) {
+      await loadAdminDashboard();
+      showScreen('admin');
+      setLoading(false);
+      return;
+    }
+
+    // Check if already completed
+    const data = await sheetsGet(`${SHEETS.ANNOTATORS}!A:A`);
+    const emails = (data.values || []).slice(1).map(r => r[0]).filter(Boolean);
+    if (emails.includes(email)) {
+      showScreen('done');
+      setLoading(false);
+      return;
+    }
+
+    // Start assessment
+    state.currentTaskIndex = 0;
+    state.answers = [];
+    state.totalStartTime = Date.now();
+    loadTask(0);
+    showScreen('assess');
+  } catch(e) {
+    showToast(e.message, 'error');
+    signOut();
+  }
+  setLoading(false);
+}
+
+// ═══════════════════════════════════════════════
+// ADMIN MANAGEMENT
+// ═══════════════════════════════════════════════
+function renderAdminList() {
+  const list = document.getElementById('admin-list');
+  list.innerHTML = CONFIG.ADMIN_EMAILS.map(email => `
+    <span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:4px 10px;font-family:var(--mono);font-size:11px;color:var(--text-muted);">
+      ${email}
+      ${email !== state.user.email ? `<button onclick="removeAdmin('${email}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;line-height:1;padding:0 0 0 4px;" title="Remove">✕</button>` : '<span style="color:var(--accent);font-size:10px;margin-left:2px;">(you)</span>'}
+    </span>`).join('');
+}
+
+function removeAdmin(email) {
+  if (email === state.user.email) { showToast("You can\'t remove yourself", 'error'); return; }
+  CONFIG.ADMIN_EMAILS = CONFIG.ADMIN_EMAILS.filter(e => e !== email);
+  saveAdminConfig();
+  renderAdminList();
+  showToast(`Removed ${email}`);
+}
+
+function addAdmin(email) {
+  email = email.trim().toLowerCase();
+  if (!email || !email.includes('@')) { showToast('Enter a valid email', 'error'); return; }
+  if (CONFIG.ADMIN_EMAILS.includes(email)) { showToast('Already an admin', 'error'); return; }
+  CONFIG.ADMIN_EMAILS.push(email);
+  saveAdminConfig();
+  renderAdminList();
+  document.getElementById('input-new-admin').value = '';
+  showToast(`Added ${email} as admin`);
+}
+
+function saveAdminConfig() {
+  // Admin changes now go through config sheet directly
+}
+
+function loadAdminConfig() {
+  // No-op — admin emails loaded from remote config sheet after OAuth
+}
+
+// ═══════════════════════════════════════════════
+// RESET ANNOTATOR
+// ═══════════════════════════════════════════════
+async function resetAnnotator(email) {
+  if (!confirm(`Reset assessment for ${email}?\n\nThis will delete their score and all response rows so they can retake the assessment. This cannot be undone.`)) return;
+
+  setLoading(true, `Resetting ${email}...`);
+  try {
+    // 1. Delete from annotators tab
+    const annData = await sheetsGet(`${SHEETS.ANNOTATORS}!A:A`);
+    const annRows = annData.values || [];
+    let annRowIdx = -1;
+    for (let i = 1; i < annRows.length; i++) {
+      if (annRows[i][0] === email) { annRowIdx = i + 1; break; }
+    }
+
+    if (annRowIdx !== -1) {
+      // Clear the row (can't delete rows via Sheets API values endpoint; clear contents instead)
+      const totalCols = 8;
+      const emptyRow = [Array(totalCols).fill('')];
+      await sheetsUpdate(`${SHEETS.ANNOTATORS}!A${annRowIdx}:H${annRowIdx}`, emptyRow);
+    }
+
+    // 2. Clear matching rows from responses tab
+    const respData = await sheetsGet(`${SHEETS.RESPONSES}!A:N`);
+    const respRows = respData.values || [];
+    const updates = [];
+    for (let i = 1; i < respRows.length; i++) {
+      if (respRows[i][0] === email) {
+        updates.push(sheetsUpdate(`${SHEETS.RESPONSES}!A${i+1}:N${i+1}`, [Array(14).fill('')]));
+      }
+    }
+    if (updates.length) await Promise.all(updates);
+
+    showToast(`${email} has been reset — they can retake the assessment`);
+    await loadAdminDashboard();
+  } catch(e) {
+    showToast('Reset failed: ' + e.message, 'error');
+    console.error(e);
+  }
+  setLoading(false);
+}
+
+function signOut() {
+  state.user = null;
+  state.accessToken = null;
+  state.currentTaskIndex = 0;
+  state.answers = [];
+  clearInterval(state.timerInterval);
+  document.getElementById('header-email').style.display = 'none';
+  document.getElementById('btn-logout').style.display = 'none';
+  document.getElementById('btn-admin-toggle').style.display = 'none';
+  showScreen('login');
+}
+
+
+const EVIDENCE_TEMPLATES = [
+  { group: 'Direct evidence', label: '1. Text visible', text: 'The presence of visible [chemistry] text in [cam].jpg provides sufficient evidence.' },
+  { group: 'Direct evidence', label: '2. Logo visible', text: 'The presence of visible [chemistry] recycling logo in [cam].jpg provides sufficient evidence.' },
+  { group: 'Direct evidence', label: '3. Voltage / mAh indicator', text: '[voltage/mAh] visible in [cam].jpg indicating [chemistry]. Product [confirmed/unconfirmed]. URL added below.' },
+  { group: 'Web search', label: '4. Web search — chemistry clear', text: '[brand/part number] visible in [cam].jpg. Web search confirms [chemistry]. URL added below.' },
+  { group: 'Web search', label: '5. Web search — chemistry unclear', text: '[product] found online. Available in [chemistry 1] and [chemistry 2] variants. Chemistry unconfirmed — marked for review.' },
+  { group: 'Multiple batteries', label: '6. Multiple batteries — same chemistry', text: 'Multiple batteries in image. All identified to be of [chemistry]; Logo/text visible on [cam].jpg.' },
+  { group: 'Multiple batteries', label: '7. Multiple batteries — different chemistry', text: 'Multiple batteries visible in image with different compositions: [chemistry 1] on [cam].jpg and [chemistry 2] on [cam].jpg. Cannot confirm single label — marked as unknown.' },
+  { group: 'Unknown / errors', label: '8. Unknown / cannot confirm', text: 'Unable to confirm battery type. [label obscured / distorted image / no visible markings].' },
+  { group: 'Unknown / errors', label: '9. Data error — non-battery item', text: 'Data error — non-battery item in image. Marked as data error.' },
+  { group: 'Unknown / errors', label: '10. Data error — product missing', text: 'Data error — product missing in [cam].jpg. Marked as data error.' },
+  { group: 'Unknown / errors', label: '11. Data error — product mismatch', text: 'Data error — product in [cam] differs from other images in dataset. Marked as data error.' },
 ];
 
-const LABELS = ['Lithium','NiCd','NiMH','Lead','Alkaline','Zinc-Carbon','Mercury','Unknown','Data Error'];
-
-let state = {
-  user: null, accessToken: null, isAdmin: false,
-  currentTask: null, timerStart: null, timerInterval: null,
-  sessionCompleted: 0, sessionAgreed: 0, sessionDisagreed: 0,
-};
-
-// ═══════════════════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════════════════
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('screen-'+id).classList.add('active');
-}
-function showToast(msg,type='success'){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.className='show '+type;
-  clearTimeout(t._t); t._t=setTimeout(()=>t.className='',3200);
-}
-function setLoading(show,text='Loading…'){
-  document.getElementById('loading-text').textContent=text;
-  document.getElementById('loading-overlay').classList.toggle('active',show);
-}
-function fmtTime(s){ if(!s||isNaN(s)) return '—'; const m=Math.floor(s/60); return `${String(m).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`; }
-function moe(n,N){ if(!n||n<=0) return 1; n=Math.min(n,N); const base=1.96*Math.sqrt(0.95*0.05/n); return N ? base*Math.sqrt((N-n)/(N-1)) : base; }
-
-// ═══════════════════════════════════════════════════════════════
-// SHEETS API
-// ═══════════════════════════════════════════════════════════════
-async function sheetsGet(range){
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}`;
-  const res=await fetch(url,{headers:{Authorization:'Bearer '+state.accessToken}});
-  const d=await res.json();
-  if(d.error?.code===401){ await refreshToken(); return sheetsGet(range); }
-  return d;
-}
-async function sheetsUpdate(range,values){
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
-  const res=await fetch(url,{method:'PUT',headers:{Authorization:'Bearer '+state.accessToken,'Content-Type':'application/json'},body:JSON.stringify({values})});
-  const d=await res.json();
-  if(d.error?.code===401){ await refreshToken(); return sheetsUpdate(range,values); }
-  return d;
-}
-async function sheetsAppend(range,values){
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-  const res=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+state.accessToken,'Content-Type':'application/json'},body:JSON.stringify({values})});
-  const d=await res.json();
-  if(d.error?.code===401){ await refreshToken(); return sheetsAppend(range,values); }
-  return d;
-}
-async function ensureSheet(name,headers){
-  const meta=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}`,{headers:{Authorization:'Bearer '+state.accessToken}});
-  const d=await meta.json();
-  const exists=d.sheets?.some(s=>s.properties.title===name);
-  if(!exists){
-    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}:batchUpdate`,{
-      method:'POST',headers:{Authorization:'Bearer '+state.accessToken,'Content-Type':'application/json'},
-      body:JSON.stringify({requests:[{addSheet:{properties:{title:name}}}]})
+function buildTemplateHTML() {
+  const groups = [...new Set(EVIDENCE_TEMPLATES.map(t => t.group))];
+  let html = '<option value="">+ Insert template...</option>';
+  groups.forEach(g => {
+    html += `<optgroup label="${g}">`;
+    EVIDENCE_TEMPLATES.filter(t => t.group === g).forEach(t => {
+      html += `<option value="${t.text.replace(/"/g, '&quot;')}">${t.label}</option>`;
     });
-    await sheetsUpdate(`${name}!A1`,[[...headers]]);
-  }
+    html += '</optgroup>';
+  });
+  return html;
 }
-async function refreshToken(){
-  return new Promise((res,rej)=>{
-    const orig=window._tc.callback;
-    window._tc.callback=(r)=>{ window._tc.callback=orig; if(r.error){rej(new Error(r.error));return;} state.accessToken=r.access_token; res(); };
-    window._tc.requestAccessToken({prompt:''});
+
+function attachTemplateDropdown(selectId, textareaId) {
+  const sel = document.getElementById(selectId);
+  const box = document.getElementById(textareaId);
+  if (!sel || !box) return;
+  sel.innerHTML = buildTemplateHTML();
+  sel.addEventListener('change', () => {
+    if (!sel.value) return;
+    box.value = sel.value;
+    box.focus();
+    sel.value = '';
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
-// SEED
-// ═══════════════════════════════════════════════════════════════
-async function seedConsensusQueue(){
-  const btn=document.getElementById('btn-seed');
-  if(!confirm('This will read the tasks tab, draw a stratified sample of 774 tasks, and write them to consensus_tasks.\n\nAlready-seeded battery IDs are skipped — safe to re-run. Continue?')) return;
-  btn.disabled=true; btn.textContent='Seeding…';
-  setLoading(true,'Reading tasks sheet…');
-  try {
-    // Ensure sheets exist
-    await ensureSheet(SHEETS.CONSENSUS,[
-      'battery_id','original_label','original_sublabel','original_lfp','original_annotator',
-      'stratum','pass1_row','assigned_to','status','assigned_at',
-      'label','sublabel','lfp','evidence','evidence_url','text_logo_visible',
-      'submitted_at','time_taken_seconds','consensus_status','gold_label','gold_set_by'
-    ]);
-    await ensureSheet(SHEETS.ANN,[
-      'email','completed','agreements','disagreements','error_rate','last_active'
-    ]);
-
-    // Read tasks sheet
-    setLoading(true,'Reading completed tasks…');
-    const tData=await sheetsGet(`${SHEETS.TASKS}!A:N`);
-    const tRows=(tData.values||[]).slice(1).filter(r=>r[0]&&r[9]==='complete');
-
-    // Read existing consensus to find already-seeded battery IDs
-    const cData=await sheetsGet(`${SHEETS.CONSENSUS}!A:A`);
-    const seeded=new Set((cData.values||[]).slice(1).map(r=>r[0]).filter(Boolean));
-
-    // Assign strata to tasks
-    function getStratum(r){
-      const label=r[1], sub=r[2]||'', lfp=r[3]||'';
-      if(label==='Data Error') return 'Data Error';
-      if(label==='NiCd') return 'NiCd';
-      if(label==='NiMH') return 'NiMH';
-      if(label==='Lead') return 'Lead';
-      if(label==='Alkaline') return 'Alkaline';
-      if(label==='Zinc-Carbon') return 'Zinc-Carbon';
-      if(label==='Mercury') return 'Mercury';
-      if(label==='Unknown') return null; // not in consensus
-      if(label==='Lithium'){
-        if(sub==='Li-ion'&&lfp==='Yes') return 'Lithium — Li-ion LFP';
-        if(sub==='Li-ion'&&lfp==='No')  return 'Lithium — Li-ion non-LFP';
-        if(sub==='Li-ion')              return 'Lithium — Li-ion LFP unknown';
-        if(sub==='Li Primary')          return 'Lithium — Li Primary';
-        return 'Lithium — sublabel unknown';
-      }
-      return null;
-    }
-
-    // Sample targets (774 total at ±3.5%)
-    const TARGETS={
-      'Lithium — Li-ion LFP unknown':139,'Lithium — Li-ion non-LFP':139,
-      'NiCd':133,'Data Error':128,'Lithium — Li-ion LFP':93,
-      'NiMH':81,'Lithium — sublabel unknown':42,'Lithium — Li Primary':10,
-      'Lead':6,'Alkaline':1,'Zinc-Carbon':1,'Mercury':1
-    };
-
-    // Group eligible rows by stratum, excluding already-seeded
-    const byStratum={};
-    tRows.forEach((r,i)=>{
-      const s=getStratum(r);
-      if(!s||seeded.has(r[0])) return;
-      if(!byStratum[s]) byStratum[s]=[];
-      byStratum[s].push({r,sheetRow:i+2});
-    });
-
-    // Draw sample (shuffle then take N)
-    function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
-
-    const toWrite=[];
-    let totalNew=0;
-    for(const [stratum,target] of Object.entries(TARGETS)){
-      const pool=byStratum[stratum]||[];
-      shuffle(pool);
-      const take=Math.min(target,pool.length);
-      for(let i=0;i<take;i++){
-        const {r,sheetRow}=pool[i];
-        toWrite.push([
-          r[0],   // battery_id
-          r[1],   // original_label
-          r[2]||'',r[3]||'', // orig_sub, orig_lfp
-          r[8]||'', // original_annotator (assigned_to col I = index 8)
-          stratum,
-          sheetRow,
-          '','unassigned','',  // assigned_to, status, assigned_at
-          '','','','','','',   // label…text_logo_visible
-          '','',               // submitted_at, time_taken
-          '','',''             // consensus_status, gold_label, gold_set_by
-        ]);
-        totalNew++;
-      }
-    }
-
-    if(totalNew===0){ showToast('Nothing new to seed — all tasks already queued','success'); btn.textContent='✓ Done'; setLoading(false); return; }
-
-    // Write in batches of 100
-    const BATCH=100; let written=0;
-    for(let i=0;i<toWrite.length;i+=BATCH){
-      setLoading(true,`Writing rows ${written+1}–${Math.min(written+BATCH,toWrite.length)} of ${toWrite.length}…`);
-      await sheetsAppend(`${SHEETS.CONSENSUS}!A:U`,toWrite.slice(i,i+BATCH));
-      written+=Math.min(BATCH,toWrite.length-i);
-    }
-
-    document.getElementById('seed-banner').style.display='none';
-    showToast(`✓ Seeded ${totalNew} consensus tasks across ${Object.keys(TARGETS).length} strata`);
-    await loadAdminDashboard();
-  } catch(e){
-    showToast('Seed failed: '+e.message,'error');
-    console.error(e);
-    btn.disabled=false; btn.textContent='⚑ Run seed';
-  }
-  setLoading(false);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TASK ASSIGNMENT
-// ═══════════════════════════════════════════════════════════════
-async function getOrAssignTask(email){
-  let data;
-  try { data=await sheetsGet(`${SHEETS.CONSENSUS}!A:U`); } catch(e){ return {notSeeded:true}; }
-  const rows=data.values||[];
-  // Tab doesn't exist or has only a header / is empty
-  if(!rows||rows.length<2) return {notSeeded:true};
-
-  // Batteries this annotator did in pass-1 (read from tasks sheet)
-  const p1Data=await sheetsGet(`${SHEETS.TASKS}!A:I`);
-  const p1Rows=(p1Data.values||[]).slice(1);
-  const myPass1=new Set(p1Rows.filter(r=>r[8]===email&&r[0]).map(r=>r[0]));
-
-  // Resume in-progress
-  for(let i=1;i<rows.length;i++){
-    const r=rows[i];
-    if(r[7]===email&&r[8]==='in-progress')
-      return {rowIndex:i+1,batteryId:r[0],origLabel:r[1],origSub:r[2],origLfp:r[3],origAnnotator:r[4],stratum:r[5]};
-  }
-  // Assign next unassigned — blind (skip own pass-1 batteries)
-  for(let i=1;i<rows.length;i++){
-    const r=rows[i];
-    if((!r[8]||r[8]==='unassigned')&&!myPass1.has(r[0])){
-      const rowNum=i+1;
-      await sheetsUpdate(`${SHEETS.CONSENSUS}!H${rowNum}:J${rowNum}`,[[email,'in-progress',new Date().toISOString()]]);
-      return {rowIndex:rowNum,batteryId:r[0],origLabel:r[1],origSub:r[2],origLfp:r[3],origAnnotator:r[4],stratum:r[5]};
-    }
-  }
-  return {queueDone:true};
-}
-
-// ═══════════════════════════════════════════════════════════════
-// SUBMIT
-// ═══════════════════════════════════════════════════════════════
-async function submitTask(rowIndex,fields,timeTaken){
-  const task=state.currentTask;
-  // Compare against pass-1
-  const p1Label=(task.origLabel||'').trim().toLowerCase();
-  const p2Label=(fields.label||'').trim().toLowerCase();
-  const p1Sub=(task.origSub||'').trim().toLowerCase();
-  const p2Sub=(fields.sublabel||'').trim().toLowerCase();
-  const p1Lfp=(task.origLfp||'').trim().toLowerCase();
-  const p2Lfp=(fields.lfp||'').trim().toLowerCase();
-  const consensus=p1Label===p2Label&&p1Sub===p2Sub&&p1Lfp===p2Lfp ? 'agree' : 'disagree';
-
-  await sheetsUpdate(`${SHEETS.CONSENSUS}!K${rowIndex}:S${rowIndex}`,[[
-    fields.label, fields.sublabel||'', fields.lfp||'',
-    fields.evidence,
-    fields.evidence_url||'',
-    fields.text_logo_visible?'Yes':'',
-    new Date().toISOString(),
-    timeTaken,
-    consensus
-  ]]);
-
-  // Update annotator record
-  await updateAnnotatorRecord(state.user.email, consensus);
-
-  // Session stats
-  state.sessionCompleted++;
-  if(consensus==='agree') state.sessionAgreed++;
-  else state.sessionDisagreed++;
-
-  return consensus;
-}
-
-async function updateAnnotatorRecord(email,consensus){
-  const data=await sheetsGet(`${SHEETS.ANN}!A:F`);
-  const rows=data.values||[];
-  let rowIdx=-1;
-  for(let i=1;i<rows.length;i++){
-    if(rows[i][0]===email){ rowIdx=i+1; break; }
-  }
-  if(rowIdx===-1){
-    // New annotator
-    const completed=1, agreements=consensus==='agree'?1:0, disagreements=consensus==='disagree'?1:0;
-    const errorRate=disagreements/completed;
-    await sheetsAppend(`${SHEETS.ANN}!A:F`,[[email,completed,agreements,disagreements,errorRate.toFixed(3),new Date().toISOString()]]);
-  } else {
-    const r=rows[rowIdx-1];
-    const completed=(parseInt(r[1])||0)+1;
-    const agreements=(parseInt(r[2])||0)+(consensus==='agree'?1:0);
-    const disagreements=(parseInt(r[3])||0)+(consensus==='disagree'?1:0);
-    const errorRate=disagreements/completed;
-    await sheetsUpdate(`${SHEETS.ANN}!A${rowIdx}:F${rowIdx}`,[[email,completed,agreements,disagreements,errorRate.toFixed(3),new Date().toISOString()]]);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TASK UI
-// ═══════════════════════════════════════════════════════════════
-function startTimer(){
-  state.timerStart=Date.now();
-  clearInterval(state.timerInterval);
-  state.timerInterval=setInterval(()=>{
-    const s=Math.floor((Date.now()-state.timerStart)/1000);
-    document.getElementById('timer-display').textContent=fmtTime(s);
-  },1000);
-}
-function stopTimer(){ clearInterval(state.timerInterval); return Math.floor((Date.now()-state.timerStart)/1000); }
-
-function resetForm(){
-  ['field-label','field-sublabel','field-lfp'].forEach(id=>document.getElementById(id).value='');
-  ['field-evidence','field-evidence-url'].forEach(id=>document.getElementById(id).value='');
-  ['field-text-logo','field-needs-review'].forEach(id=>document.getElementById(id).checked=false);
-  document.getElementById('field-sublabel-wrap').style.display='none';
-  document.getElementById('field-lfp-wrap').style.display='none';
-}
-
-async function loadNextTask(){
-  setLoading(true,'Finding next task…');
-  try {
-    const task=await getOrAssignTask(state.user.email);
-    if(!task||task.notSeeded){
-      // Queue not seeded yet — show holding screen instead of done
-      showScreen('not-seeded'); setLoading(false); return;
-    }
-    if(task.queueDone){
-      // Genuinely all tasks complete for this annotator
-      document.getElementById('done-completed').textContent=state.sessionCompleted;
-      document.getElementById('done-agreed').textContent=state.sessionAgreed;
-      document.getElementById('done-disagreed').textContent=state.sessionDisagreed;
-      showScreen('done'); setLoading(false); return;
-    }
-    state.currentTask=task;
-    resetForm();
-    document.getElementById('display-battery-id').textContent=task.batteryId;
-    // Progress
-    const data=await sheetsGet(`${SHEETS.CONSENSUS}!A:I`);
-    const rows=(data.values||[]).slice(1).filter(r=>r[0]);
-    const total=rows.length;
-    const done=rows.filter(r=>r[8]==='complete').length;
-    document.getElementById('progress-fill').style.width=total?(done/total*100)+'%':'0%';
-    document.getElementById('progress-text').textContent=`${done} / ${total}`;
-    startTimer();
-  } catch(e){
-    showToast('Error loading task: '+e.message,'error');
-  }
-  setLoading(false);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// ADMIN DASHBOARD
-// ═══════════════════════════════════════════════════════════════
-async function loadAdminDashboard(){
-  setLoading(true,'Loading dashboard…');
-  try {
-    const [cData,aData]=await Promise.all([
-      sheetsGet(`${SHEETS.CONSENSUS}!A:U`),
-      sheetsGet(`${SHEETS.ANN}!A:F`)
-    ]);
-    const cRows=(cData.values||[]).slice(1).filter(r=>r[0]);
-    const aRows=(aData.values||[]).slice(1).filter(r=>r[0]);
-
-    const seeded=cRows.length;
-    const completed=cRows.filter(r=>r[8]==='complete').length;
-    const agreed=cRows.filter(r=>r[18]==='agree').length;
-    const disagreed=cRows.filter(r=>r[18]==='disagree').length;
-    const pct=completed?Math.round(completed/seeded*100):0;
-    const agreeRate=completed?Math.round(agreed/completed*100):0;
-
-    document.getElementById('s-seeded').textContent=seeded;
-    document.getElementById('s-completed').textContent=completed;
-    document.getElementById('s-pct').textContent=pct+'% complete';
-    document.getElementById('s-agree').textContent=completed?agreeRate+'%':'—';
-
-    // Seed banner
-    if(seeded>0) document.getElementById('seed-banner').style.display='none';
-
-    // CW flags
-    const flagged=aRows.filter(r=>parseInt(r[3])>=2).length;
-    const deepDive=aRows.filter(r=>parseInt(r[3])>=3||parseFloat(r[4])>0.25).length;
-    document.getElementById('s-flagged').textContent=flagged;
-    document.getElementById('s-deepdive').textContent=deepDive>0?`${deepDive} need deep-dive`:'';
-    document.getElementById('badge-flag').textContent=flagged;
-    document.getElementById('badge-dis').textContent=disagreed;
-
-    // Accuracy by stratum
-    renderAccuracy(cRows);
-    // CW performance
-    renderCW(aRows, cRows);
-    // Disagreements
-    renderDisagreements(cRows);
-
-  } catch(e){
-    showToast('Dashboard error: '+e.message,'error');
-    console.error(e);
-  }
-  setLoading(false);
-}
-
-function renderAccuracy(rows){
-  const strata={};
-  rows.forEach(r=>{
-    const s=r[5]||'Unknown';
-    if(!strata[s]) strata[s]={pool:STRATA_POOLS[s]||0,sampled:0,completed:0,agreed:0,disagreed:0};
-    strata[s].sampled++;
-    if(r[8]==='complete'){ strata[s].completed++; if(r[18]==='agree') strata[s].agreed++; else if(r[18]==='disagree') strata[s].disagreed++; }
-  });
-  const tbody=document.getElementById('tbody-accuracy');
-  tbody.innerHTML=Object.entries(strata).sort((a,b)=>(b[1].pool||0)-(a[1].pool||0)).map(([s,d])=>{
-    const rate=d.completed?Math.round(d.agreed/d.completed*100):null;
-    const m=d.completed?moe(d.completed,d.pool||d.sampled):null;
-    const rateStr=rate!==null?rate+'%':'—';
-    const color=rate===null?'var(--text-dim)':rate>=95?'var(--green)':rate>=90?'var(--warn)':'var(--red)';
-    const barW=rate||0;
-    const moeStr=m!==null?'±'+(m*100).toFixed(1)+'%':'—';
-    return `<tr>
-      <td style="font-family:var(--mono);font-size:12px">${s}</td>
-      <td style="color:var(--text-muted)">${(d.pool||0).toLocaleString()}</td>
-      <td>${d.sampled}</td>
-      <td>${d.completed}</td>
-      <td style="color:var(--green)">${d.agreed}</td>
-      <td style="color:var(--red)">${d.disagreed}</td>
-      <td>
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="accuracy-bar"><div class="accuracy-fill" style="width:${barW}%;background:${color}"></div></div>
-          <span style="color:${color};font-family:var(--mono);font-size:12px;font-weight:600">${rateStr}</span>
-        </div>
-      </td>
-      <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">${moeStr}</td>
-    </tr>`;
-  }).join('');
-}
-
-function renderCW(aRows, cRows){
-  // Build map: annotator → their consensus tasks
-  const annTasks={};
-  cRows.forEach(r=>{
-    const ann=r[4]; // original_annotator
-    if(!ann) return;
-    if(!annTasks[ann]) annTasks[ann]={sampled:0,completed:0,agreed:0,disagreed:0};
-    annTasks[ann].sampled++;
-    if(r[8]==='complete'){ annTasks[ann].completed++; if(r[18]==='agree') annTasks[ann].agreed++; else annTasks[ann].disagreed++; }
-  });
-
-  const tbody=document.getElementById('tbody-cw');
-  const sorted=Object.entries(annTasks).sort((a,b)=>b[1].disagreed-a[1].disagreed);
-  tbody.innerHTML=sorted.map(([ann,d])=>{
-    const errorRate=d.completed?d.disagreed/d.completed:0;
-    const isDeepDive=d.disagreed>=3||errorRate>0.25;
-    const isFlag=d.disagreed>=2&&!isDeepDive;
-    const statusBadge=isDeepDive
-      ?'<span class="badge badge-red">⚠ deep-dive</span>'
-      :isFlag?'<span class="badge badge-yellow">⚑ flagged</span>'
-      :d.completed>0?'<span class="badge badge-green">✓ ok</span>'
-      :'<span class="badge badge-gray">pending</span>';
-    const shortAnn=ann.split('@')[0];
-    const rowClass=isDeepDive?'deepdive-row':isFlag?'flag-row':'';
-    return `<tr class="${rowClass}">
-      <td style="font-family:var(--mono);font-size:12px">${shortAnn}</td>
-      <td>${d.sampled}</td>
-      <td>${d.completed}</td>
-      <td style="color:var(--green)">${d.agreed}</td>
-      <td style="color:${d.disagreed>=2?'var(--red)':'var(--text)'}">${d.disagreed}</td>
-      <td style="font-family:var(--mono);font-size:12px;color:${errorRate>0.15?'var(--warn)':'var(--text-muted)'}">${d.completed?(errorRate*100).toFixed(0)+'%':'—'}</td>
-      <td>${statusBadge}</td>
-    </tr>`;
-  }).join('');
-}
-
-function renderDisagreements(rows){
-  const dis=rows.filter(r=>r[18]==='disagree');
-  const container=document.getElementById('dis-list');
-  if(dis.length===0){
-    container.innerHTML=`<div style="padding:48px;text-align:center;color:var(--text-dim);font-family:var(--mono);font-size:13px">No disagreements yet</div>`;
-    return;
-  }
-  container.innerHTML=dis.map((r,i)=>{
-    const rowNum=rows.indexOf(r)+2;
-    const batteryId=r[0];
-    const origAnnot=(r[4]||'—').split('@')[0];
-    const p1Label=r[1]||'—', p1Sub=r[2]||'', p1Lfp=r[3]||'';
-    const p2Label=r[10]||'—', p2Sub=r[11]||'', p2Lfp=r[12]||'';
-    const p2Ev=r[13]||'—', p2Annot=(r[7]||'—').split('@')[0];
-    const stratum=r[5]||'';
-    const gold=r[19]||'';
-    const goldBy=(r[20]||'').split('@')[0];
-    const labelDiff=p1Label.toLowerCase()!==p2Label.toLowerCase();
-    const subDiff=p1Sub.toLowerCase()!==p2Sub.toLowerCase();
-    const lfpDiff=p1Lfp.toLowerCase()!==p2Lfp.toLowerCase();
-    const goldOpts=LABELS.map(l=>`<option value="${l}" ${gold===l?'selected':''}>${l}</option>`).join('');
-    return `<div class="dis-card">
-      <div class="dis-header">
-        <div>
-          <span style="font-family:var(--mono);font-size:13px;font-weight:600">${batteryId}</span>
-          <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:12px">${stratum}</span>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          ${gold?`<span class="badge badge-purple">gold: ${gold}</span>`:''}
-          <span class="badge badge-red">disagree</span>
-        </div>
-      </div>
-      <div class="dis-body">
-        <div class="dis-col">
-          <div class="dis-col-label"><span class="badge badge-gray" style="font-size:9px">PASS 1</span><span style="font-size:11px;color:var(--text-dim)">${origAnnot}</span></div>
-          <div class="dis-field"><div class="dis-field-lbl">Label</div><div class="dis-field-val ${labelDiff?'diff':''}">${p1Label}</div></div>
-          ${p1Sub?`<div class="dis-field"><div class="dis-field-lbl">Sub-label</div><div class="dis-field-val ${subDiff?'diff':''}">${p1Sub}</div></div>`:''}
-          ${p1Lfp?`<div class="dis-field"><div class="dis-field-lbl">LFP</div><div class="dis-field-val ${lfpDiff?'diff':''}">${p1Lfp}</div></div>`:''}
-        </div>
-        <div class="dis-col">
-          <div class="dis-col-label"><span class="badge badge-yellow" style="font-size:9px">PASS 2</span><span style="font-size:11px;color:var(--text-dim)">${p2Annot}</span></div>
-          <div class="dis-field"><div class="dis-field-lbl">Label</div><div class="dis-field-val ${labelDiff?'diff':''}">${p2Label}</div></div>
-          ${p2Sub?`<div class="dis-field"><div class="dis-field-lbl">Sub-label</div><div class="dis-field-val ${subDiff?'diff':''}">${p2Sub}</div></div>`:''}
-          ${p2Lfp?`<div class="dis-field"><div class="dis-field-lbl">LFP</div><div class="dis-field-val ${lfpDiff?'diff':''}">${p2Lfp}</div></div>`:''}
-          <div class="dis-field"><div class="dis-field-lbl">Evidence</div><div style="font-size:12px;color:var(--text-muted);line-height:1.5;white-space:normal">${p2Ev}</div></div>
-        </div>
-      </div>
-      <div class="gold-form">
-        <label>Set gold standard label:</label>
-        <select id="gold-sel-${i}" onchange="">${goldOpts}</select>
-        <button class="btn-secondary" onclick="setGoldLabel(${rowNum}, '${batteryId}', document.getElementById('gold-sel-${i}').value, ${i})" style="padding:5px 14px;font-size:11px">Save gold label</button>
-        ${goldBy?`<span style="font-family:var(--mono);font-size:10px;color:var(--text-dim)">set by ${goldBy}</span>`:''}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-async function setGoldLabel(rowNum, batteryId, gold, idx){
-  if(!gold){ showToast('Select a label first','error'); return; }
-  try {
-    await sheetsUpdate(`${SHEETS.CONSENSUS}!T${rowNum}:U${rowNum}`,[[gold, state.user.email]]);
-    showToast(`Gold label "${gold}" saved for ${batteryId}`);
-    await loadAdminDashboard();
-  } catch(e){
-    showToast('Save failed: '+e.message,'error');
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// EXPORT
-// ═══════════════════════════════════════════════════════════════
-async function exportResults(){
-  setLoading(true,'Exporting…');
-  try {
-    const [cData,aData]=await Promise.all([
-      sheetsGet(`${SHEETS.CONSENSUS}!A:U`),
-      sheetsGet(`${SHEETS.ANN}!A:F`)
-    ]);
-    const cRows=(cData.values||[]).slice(1).filter(r=>r[0]&&r[8]==='complete');
-    const aRows=(aData.values||[]).slice(1).filter(r=>r[0]);
-
-    const wb=XLSX.utils.book_new();
-
-    // Sheet 1: all completed consensus tasks
-    const ws1=XLSX.utils.aoa_to_sheet([
-      ['battery_id','stratum','original_annotator','original_label','original_sublabel','original_lfp',
-       'consensus_annotator','consensus_label','consensus_sublabel','consensus_lfp',
-       'consensus_status','gold_label','time_taken_s'],
-      ...cRows.map(r=>[r[0],r[5],r[4],r[1],r[2],r[3],r[7],r[10],r[11],r[12],r[18],r[19]||'',r[17]])
-    ]);
-    XLSX.utils.book_append_sheet(wb,ws1,'Consensus Tasks');
-
-    // Sheet 2: CW performance
-    const ws2=XLSX.utils.aoa_to_sheet([
-      ['annotator','tasks_sampled','completed','agreements','disagreements','error_rate','status'],
-      ...aRows.map(r=>{
-        const dis=parseInt(r[3])||0; const er=parseFloat(r[4])||0;
-        const status=dis>=3||er>0.25?'deep-dive':dis>=2?'flagged':'ok';
-        return [r[0],'-',r[1],r[2],r[3],r[4],status];
-      })
-    ]);
-    XLSX.utils.book_append_sheet(wb,ws2,'CW Performance');
-
-    // Sheet 3: disagreements with gold labels
-    const dis=cRows.filter(r=>r[18]==='disagree');
-    const ws3=XLSX.utils.aoa_to_sheet([
-      ['battery_id','stratum','pass1_annotator','pass1_label','pass1_sublabel','pass1_lfp',
-       'pass2_annotator','pass2_label','pass2_sublabel','pass2_lfp','gold_label','gold_set_by'],
-      ...dis.map(r=>[r[0],r[5],r[4],r[1],r[2],r[3],r[7],r[10],r[11],r[12],r[19]||'',r[20]||''])
-    ]);
-    XLSX.utils.book_append_sheet(wb,ws3,'Disagreements');
-
-    XLSX.writeFile(wb,`consensus_results_${new Date().toISOString().slice(0,10)}.xlsx`);
-    showToast('Exported successfully');
-  } catch(e){ showToast('Export failed: '+e.message,'error'); }
-  setLoading(false);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TAB SWITCHING
-// ═══════════════════════════════════════════════════════════════
-function switchTab(tab){
-  ['accuracy','cw','disagree'].forEach(t=>{
-    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
-    document.getElementById('pane-'+t).style.display=t===tab?'block':'none';
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════
-// AUTH
-// ═══════════════════════════════════════════════════════════════
-function initTokenClient(){
-  window._tc=google.accounts.oauth2.initTokenClient({
-    client_id:CONFIG.CLIENT_ID, scope:CONFIG.SCOPES,
-    callback:async(resp)=>{
-      if(resp.error){ showToast('Sign-in error: '+resp.error,'error'); return; }
-      state.accessToken=resp.access_token;
-      clearInterval(window._refreshInt);
-      window._refreshInt=setInterval(async()=>{ try{ await refreshToken(); }catch(e){} },45*60*1000);
-      if(state.user) return;
-      try {
-        const r=await fetch('https://openidconnect.googleapis.com/v1/userinfo',{headers:{Authorization:'Bearer '+resp.access_token}});
-        const info=await r.json();
-        if(!info.email) throw new Error('No email');
-        await signInUser(info.email);
-      } catch(e){ showToast('Could not get user info','error'); }
-    }
-  });
-}
-
-async function signInUser(email){
-  state.user={email};
-  state.isAdmin=CONFIG.ADMIN_EMAILS.includes(email);
-  document.getElementById('header-email').textContent=email;
-  document.getElementById('header-email').style.display='';
-  document.getElementById('btn-logout').style.display='';
-  if(state.isAdmin) document.getElementById('btn-admin-toggle').style.display='';
-  showScreen('task');
-  await loadNextTask();
-}
-
-function signOut(){
-  state.user=null; state.accessToken=null; state.currentTask=null;
-  clearInterval(state.timerInterval);
-  document.getElementById('header-email').style.display='none';
-  document.getElementById('btn-logout').style.display='none';
-  document.getElementById('btn-admin-toggle').style.display='none';
-  showScreen('login');
-}
-
-// ═══════════════════════════════════════════════════════════════
-// FORM LOGIC
-// ═══════════════════════════════════════════════════════════════
-function attachTemplateDropdown(){
-  const sel=document.getElementById('template-select');
-  TEMPLATES.forEach((t,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=t.substring(0,60)+'…'; sel.appendChild(o); });
-  document.getElementById('btn-use-template').addEventListener('click',()=>{
-    const idx=parseInt(sel.value);
-    if(isNaN(idx)) return;
-    document.getElementById('field-evidence').value=TEMPLATES[idx];
-    sel.value='';
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // INIT
-// ═══════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded',()=>{
+// ═══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  loadAdminConfig();
   initTokenClient();
-  attachTemplateDropdown();
   showScreen('login');
 
-  document.getElementById('btn-signin').addEventListener('click',()=>window._tc.requestAccessToken({prompt:'select_account'}));
-  document.getElementById('btn-logout').addEventListener('click',signOut);
-
-  // Label conditional logic
-  document.getElementById('field-label').addEventListener('change',function(){
-    const isLithium=this.value==='Lithium';
-    document.getElementById('field-sublabel-wrap').style.display=isLithium?'':'none';
-    if(!isLithium){ document.getElementById('field-sublabel').value=''; document.getElementById('field-lfp').value=''; document.getElementById('field-lfp-wrap').style.display='none'; }
-  });
-  document.getElementById('field-sublabel').addEventListener('change',function(){
-    const needsLfp=['Li-ion','Solid-state'].includes(this.value);
-    document.getElementById('field-lfp-wrap').style.display=needsLfp?'':'none';
-    if(!needsLfp) document.getElementById('field-lfp').value='';
+  document.getElementById('btn-google-signin').addEventListener('click', () => {
+    window._tokenClient.requestAccessToken({ prompt: 'select_account' });
   });
 
-  // Submit — debounced
-  let _submitting=false;
-  document.getElementById('btn-submit').addEventListener('click',async()=>{
-    if(_submitting) return;
-    const label=document.getElementById('field-label').value;
-    const evidence=document.getElementById('field-evidence').value.trim();
-    if(!label){ showToast('Select a label','error'); return; }
-    if(!evidence){ showToast('Evidence is required','error'); return; }
-    _submitting=true;
-    const btn=document.getElementById('btn-submit');
-    btn.disabled=true; btn.textContent='Submitting…';
-    const timeTaken=stopTimer();
-    try {
-      const fields={
-        label, sublabel:document.getElementById('field-sublabel').value,
-        lfp:document.getElementById('field-lfp').value,
-        evidence, evidence_url:document.getElementById('field-evidence-url').value.trim(),
-        text_logo_visible:document.getElementById('field-text-logo').checked,
-        needs_review:document.getElementById('field-needs-review').checked,
-      };
-      await submitTask(state.currentTask.rowIndex,fields,timeTaken);
-      await loadNextTask();
-    } catch(e){
-      showToast('Submit failed: '+e.message,'error');
-      btn.disabled=false; btn.textContent='Submit →';
+  document.getElementById('btn-logout').addEventListener('click', signOut);
+
+  document.getElementById('btn-admin-toggle').addEventListener('click', () => {
+    if (document.getElementById('screen-admin').classList.contains('active')) {
+      showScreen('assess');
+    } else {
+      loadAdminDashboard();
+      showScreen('admin');
     }
-    _submitting=false;
   });
 
-  // Admin toggle
-  document.getElementById('btn-admin-toggle').addEventListener('click',()=>{
-    const adminScreen=document.getElementById('screen-admin');
-    if(adminScreen.classList.contains('active')){ showScreen('task'); }
-    else { showScreen('admin'); loadAdminDashboard(); }
+  // Conditional dropdowns
+  document.getElementById('field-label').addEventListener('change', (e) => {
+    const isLithium = e.target.value === 'Lithium';
+    document.getElementById('lithium-fields').classList.toggle('visible', isLithium);
+    if (!isLithium) {
+      document.getElementById('field-sublabel').value = '';
+      document.getElementById('field-lfp').value = '';
+      document.getElementById('lfp-field').classList.remove('visible');
+    }
   });
 
-  document.getElementById('btn-back-to-task').addEventListener('click',()=>showScreen('task'));
-  document.getElementById('btn-goto-admin-ns').addEventListener('click',()=>{
-    if(state.isAdmin){ showScreen('admin'); loadAdminDashboard(); }
-    else showToast('Admin access required','error');
+  document.getElementById('field-sublabel').addEventListener('change', (e) => {
+    const showLFP = e.target.value === 'Li-ion' || e.target.value === 'Solid-state';
+    document.getElementById('lfp-field').classList.toggle('visible', showLFP);
+    if (!showLFP) document.getElementById('field-lfp').value = '';
   });
-  document.getElementById('btn-refresh').addEventListener('click',loadAdminDashboard);
-  document.getElementById('btn-export').addEventListener('click',exportResults);
-  document.getElementById('btn-seed').addEventListener('click',seedConsensusQueue);
+
+  attachTemplateDropdown('template-select', 'field-evidence');
+  document.getElementById('btn-next').addEventListener('click', handleNext);
+  document.getElementById('btn-export').addEventListener('click', exportResults);
+  document.getElementById('btn-refresh').addEventListener('click', loadAdminDashboard);
+  document.getElementById('btn-send-all').addEventListener('click', async () => {
+    if (confirm('Send results to all annotators who have completed the assessment?')) {
+      await sendAllResults();
+    }
+  });
+  document.getElementById('btn-manage-admins').addEventListener('click', () => {
+    const panel = document.getElementById('admin-mgmt-panel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    if (panel.style.display === 'block') renderAdminList();
+  });
+  document.getElementById('btn-close-admin-mgmt').addEventListener('click', () => {
+    document.getElementById('admin-mgmt-panel').style.display = 'none';
+  });
+  document.getElementById('btn-add-admin').addEventListener('click', () => {
+    addAdmin(document.getElementById('input-new-admin').value);
+  });
+  document.getElementById('input-new-admin').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addAdmin(document.getElementById('input-new-admin').value);
+  });
 });
 </script>
 </body>
