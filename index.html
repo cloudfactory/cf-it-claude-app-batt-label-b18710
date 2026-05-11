@@ -1054,7 +1054,7 @@
 
 // The ONE hardcoded value across all apps — the config sheet ID.
 // This never changes. Everything else comes from the sheet.
-const CONFIG_SHEET_ID = '1axlYSB3d5H0tDO4M_UA73QmKUY60xkzTrUi2Wfz1cls';
+const CONFIG_SHEET_ID = '__CONFIG_SHEET_ID_PLACEHOLDER__';
 
 // Defaults — used if config sheet is unreachable or key is missing
 const CONFIG_DEFAULTS = {
@@ -1827,13 +1827,17 @@ function initTokenClient() {
           headers: { Authorization: 'Bearer ' + resp.access_token }
         });
         const info = await res.json();
-        if (!info.email) throw new Error('No email returned');
-        await loadConfig(resp.access_token);
-        await signInUser(info.email, info.name || info.email);
-      } catch(e) {
-        console.error('Userinfo error:', e);
-        showToast('Could not get user info — please try again', 'error');
-      }
+        if (!info.email) throw new Error('No email returned from Google');
+      } catch(e) { showToast('Could not get user info: ' + e.message, 'error'); return; }
+
+      // Load config — soft failure, falls back to defaults
+      try { await loadConfig(resp.access_token); }
+      catch(e) { console.warn('Config load failed, using defaults:', e.message); }
+
+      // Sign in
+      try { await signInUser(info.email, info.name || info.email); }
+      catch(e) { showToast('Sign-in error: ' + e.message, 'error'); }
+
     }
   });
 }
