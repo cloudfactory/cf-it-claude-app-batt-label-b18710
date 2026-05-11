@@ -1214,7 +1214,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   attachTemplateDropdown();
   showScreen('login');
 
-  document.getElementById('btn-signin').addEventListener('click',()=>window._tc.requestAccessToken({prompt:'consent'}));
+  document.getElementById('btn-signin').addEventListener('click',()=>window._tc.requestAccessToken({prompt:'select_account'}));
   document.getElementById('btn-logout').addEventListener('click',signOut);
 
   // Label conditional logic
