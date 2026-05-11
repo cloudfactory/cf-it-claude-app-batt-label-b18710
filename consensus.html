@@ -714,8 +714,8 @@ async function seedConsensusQueue(){
 // TASK ASSIGNMENT
 // ═══════════════════════════════════════════════════════════════
 async function getOrAssignTask(email){
-  const data = await sheetsGet(`${SHEETS.CONSENSUS}!A:W`);
-  const rows = (data.values||[]).map(r=>{ while(r.length<23) r.push(''); return r; });
+  const data = await sheetsGet(`${SHEETS.CONSENSUS}!A:J`);
+  const rows = (data.values||[]).map(r=>{ while(r.length<10) r.push(''); return r; });
   if(rows.length < 2) return {notSeeded:true};
 
   // Resume own in-progress task
@@ -830,18 +830,9 @@ async function loadNextTask(){
     state.currentTask=task;
     resetForm();
     document.getElementById('display-battery-id').textContent=task.batteryId;
-    // Progress — non-blocking
+    // Progress from session counter — no API call
+    document.getElementById('progress-text').textContent=`${state.sessionCompleted} done this session`;
     startTimer();
-    try {
-      const pData=await sheetsGet(`${SHEETS.CONSENSUS}!A:I`);
-      const pRows=(pData.values||[]).slice(1)
-        .filter(r=>r[0])
-        .map(r=>{ while(r.length<9) r.push(''); return r; });
-      const total=pRows.length;
-      const done=pRows.filter(r=>r[8]==='complete').length;
-      document.getElementById('progress-fill').style.width=total?(done/total*100)+'%':'0%';
-      document.getElementById('progress-text').textContent=`${done} / ${total}`;
-    } catch(e){ console.warn('Progress fetch failed:', e.message); }
   } catch(e){
     showToast('Error loading task: '+e.message,'error');
   }
