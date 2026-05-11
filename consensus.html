@@ -621,6 +621,8 @@ async function seedConsensusQueue(){
     await ensureSheet(SHEETS.ANN,[
       'email','completed','agreements','disagreements','error_rate','total_time_seconds','avg_time_seconds','last_active','total_time_hms','avg_time_mmss'
     ]);
+    // Ensure header has all 10 columns (in case tab was created with old 8-col schema)
+    await sheetsUpdate(`${SHEETS.ANN}!A1:J1`,[['email','completed','agreements','disagreements','error_rate','total_time_seconds','avg_time_seconds','last_active','total_time_hms','avg_time_mmss']]);
 
     // Read tasks sheet
     setLoading(true,'Reading completed tasks…');
@@ -766,8 +768,9 @@ async function submitTask(rowIndex,fields,timeTaken){
     new Date().toISOString(),timeTaken,consensus
   ]]);
 
-  // Update annotator record — fire and forget, won't block next task
-  updateAnnotatorRecord(state.user.email,consensus,timeTaken).catch(e=>console.warn('Ann:',e));
+  // Update annotator record — awaited so errors surface, but failure won't block
+  try { await updateAnnotatorRecord(state.user.email,consensus,timeTaken); }
+  catch(e){ console.warn('Annotator record update failed:', e.message); }
 
   state.sessionCompleted++;
   if(consensus==='agree') state.sessionAgreed++;
@@ -775,8 +778,13 @@ async function submitTask(rowIndex,fields,timeTaken){
 }
 
 async function updateAnnotatorRecord(email,consensus,timeTaken){
+  // Ensure header row exists with correct columns
   const data=await sheetsGet(`${SHEETS.ANN}!A:J`);
   const rows=data.values||[];
+  // If sheet is empty or has wrong header, write it
+  if(!rows.length || rows[0][0]!=='email'){
+    await sheetsUpdate(`${SHEETS.ANN}!A1:J1`,[['email','completed','agreements','disagreements','error_rate','total_time_seconds','avg_time_seconds','last_active','total_time_hms','avg_time_mmss']]);
+  }
   let rowIdx=-1;
   for(let i=1;i<rows.length;i++){
     if(rows[i][0]===email){ rowIdx=i+1; break; }
