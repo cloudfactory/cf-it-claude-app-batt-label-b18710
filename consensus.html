@@ -1334,13 +1334,16 @@ document.addEventListener('DOMContentLoaded',()=>{
         needs_review: document.getElementById('field-needs-review').checked,
       };
       await submitTask(state.currentTask.rowIndex, fields, timeTaken);
+      // Reset button before loading next task so it never appears stuck
+      btn.disabled=false; btn.textContent='Submit →';
+      _submitting=false;
       await loadNextTask();
     } catch(e){
       console.error('Submit error:', e);
       showToast('Submit failed: ' + (e.message||'Unknown error'), 'error');
       btn.disabled=false; btn.textContent='Submit →';
+      _submitting=false;
     }
-    _submitting=false;
   });
 
   // Admin toggle
