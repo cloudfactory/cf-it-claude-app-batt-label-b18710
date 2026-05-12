@@ -1374,7 +1374,7 @@ function renderDisagreementCards(pairs){
       goldEvUrlEl.value = m ? m[1] : (raw.startsWith('http') ? raw : '');
     }
     // Re-apply staged visual state if this card was already staged
-    if(_pendingGold[pair.rowNum]){
+    if(_pendingGold[rowNum]){
       const sb = document.getElementById('stage-btn-'+i);
       const ss = document.getElementById('stage-status-'+i);
       if(sb){ sb.textContent='✓ Staged'; sb.style.borderColor='var(--accent)'; sb.style.color='var(--accent)'; }
