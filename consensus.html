@@ -1059,7 +1059,7 @@ function renderDisagreementCards(pairs){
     const p1Label=r[1]||'—', p1Sub=r[2]||'', p1Lfp=r[3]||'';
     const p1Annot=(r[4]||'—').split('@')[0];
     const p2Label=r[10]||'—', p2Sub=r[11]||'', p2Lfp=r[12]||'';
-    const p2Ev=r[13]||'—', p2Annot=(r[7]||'—').split('@')[0];
+    const p2Ev=r[13]||'—', p2EvUrl=r[14]||'', p2Annot=(r[7]||'—').split('@')[0];
     const sameAnnotator = r[4] && r[7] && r[4].toLowerCase()===r[7].toLowerCase();
     const stratum=r[5]||'';
     const gold=r[19]||'';
@@ -1119,7 +1119,10 @@ function renderDisagreementCards(pairs){
           <div class="dis-field"><div class="dis-field-lbl">Label</div><div class="dis-field-val ${labelDiff?'diff':''}">${p2Label}</div></div>
           ${p2Sub?`<div class="dis-field"><div class="dis-field-lbl">Sub-label</div><div class="dis-field-val ${subDiff?'diff':''}">${p2Sub}</div></div>`:''}
           ${p2Lfp?`<div class="dis-field"><div class="dis-field-lbl">LFP</div><div class="dis-field-val ${lfpDiff?'diff':''}">${p2Lfp}</div></div>`:''}
-          <div class="dis-field"><div class="dis-field-lbl">Evidence</div><div style="font-size:12px;color:var(--text-muted);line-height:1.5;white-space:normal">${p2Ev}</div></div>
+          <div class="dis-field"><div class="dis-field-lbl">Evidence</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.5;white-space:normal">${p2Ev}
+              ${p2EvUrl ? `<a href="${p2EvUrl.replace(/=HYPERLINK\("([^"]+)".*/,'$1')}" target="_blank" style="color:var(--accent);font-size:11px;font-family:var(--mono);margin-left:4px">↗ link</a>` : ''}
+            </div></div>
         </div>
       </div>
       <div class="gold-form">
@@ -1148,8 +1151,12 @@ function renderDisagreementCards(pairs){
     const ev = _p1EvidenceMap[batteryId] || {};
     let html = ev.evidence || '<span style="color:var(--text-dim)">—</span>';
     if(ev.evidenceUrl){
-      const url = ev.evidenceUrl.replace(/=HYPERLINK\("([^"]+)".*/,'$1');
-      html += ' <a href="'+url+'" target="_blank" style="color:var(--accent);font-size:11px;font-family:var(--mono)">↗ link</a>';
+      const rawUrl = String(ev.evidenceUrl);
+      const m = rawUrl.match(/=HYPERLINK\("([^"]+)"/);
+      const url = m ? m[1] : rawUrl;
+      if(url && url.startsWith('http')){
+        html += ' <a href="'+url+'" target="_blank" style="color:var(--accent);font-size:11px;font-family:var(--mono)">↗ link</a>';
+      }
     }
     el.innerHTML = html;
 
