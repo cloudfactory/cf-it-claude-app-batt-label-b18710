@@ -322,7 +322,10 @@ code{background:var(--surface2);padding:1px 5px;border-radius:2px;font-size:10px
   <!-- Disagreements tab -->
   <div id="pane-disagree" style="display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)">Set gold standard — saves to master dataset</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)">Set gold standard</div>
+        <span id="pending-count" style="font-family:var(--mono);font-size:11px;color:var(--warn);display:none">0 staged</span>
+      </div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <label style="font-family:var(--mono);font-size:10px;color:var(--text-muted)">Stratum:</label>
         <select id="dis-filter" onchange="filterDisagreements()" style="font-size:12px;padding:4px 8px;width:220px">
@@ -333,6 +336,7 @@ code{background:var(--surface2);padding:1px 5px;border-radius:2px;font-size:10px
           <option value="pending">Gold not set</option>
           <option value="done">Gold set</option>
         </select>
+        <button class="btn-primary" id="btn-save-all-gold" onclick="saveAllGoldLabels()" style="display:none;white-space:nowrap">↑ Save all to master dataset</button>
       </div>
     </div>
     <div id="dis-list"></div>
@@ -366,6 +370,7 @@ const CONFIG_SHEET_ID = '__CONFIG_SHEET_ID_PLACEHOLDER__';
 // Defaults — used if config sheet is unreachable or key is missing
 const CONFIG_DEFAULTS = {
   admin_emails:                  'ayush.siddhi@cloudfactory.com, robina@cloudfactory.com',
+  reviewer_emails:               '',
   labeling_sheet_id:             '1iQ7-zWXr39rz06i78cijr61WFBBeoYAJ2ppCBr6qa2U',
   assessment_sheet_id:           '1o1Xd0KOIwmHSwf9KhF6UR8DzQV6mj7fEuUQjpUb1NWE',
   consensus_sheet_id:            '1iQ7-zWXr39rz06i78cijr61WFBBeoYAJ2ppCBr6qa2U',
@@ -404,7 +409,8 @@ async function loadConfig(accessToken) {
 function parseConfig(raw) {
   return {
     // Auth
-    adminEmails: raw.admin_emails.split(',').map(e => e.trim()).filter(Boolean),
+    adminEmails:    raw.admin_emails.split(',').map(e => e.trim()).filter(Boolean),
+  reviewerEmails: (raw.reviewer_emails||'').split(',').map(e => e.trim()).filter(Boolean),
 
     // Sheet IDs per app
     labelingSheetId:    raw.labeling_sheet_id,
@@ -433,6 +439,7 @@ const CONFIG = {
   get SHEET_ID()              { return APP_CONFIG ? APP_CONFIG.consensusSheetId : '1iQ7-zWXr39rz06i78cijr61WFBBeoYAJ2ppCBr6qa2U'; },
   get ADMIN_EMAILS()          { return APP_CONFIG ? APP_CONFIG.adminEmails : ['ayush.siddhi@cloudfactory.com']; },
   set ADMIN_EMAILS(v)         { if (APP_CONFIG) APP_CONFIG.adminEmails = v; },
+  get REVIEWER_EMAILS()       { return APP_CONFIG ? APP_CONFIG.reviewerEmails : []; },
   get FLAG_THRESHOLD()        { return APP_CONFIG ? APP_CONFIG.consensusFlagThreshold : 2; },
   get DEEPDIVE_THRESHOLD()    { return APP_CONFIG ? APP_CONFIG.consensusDeepDiveThreshold : 3; },
   get DEEPDIVE_ERROR_RATE()   { return APP_CONFIG ? APP_CONFIG.consensusDeepDiveErrorRate : 0.25; },
@@ -488,7 +495,7 @@ function buildTemplateHTML() {
 const LABELS = ['Lithium','NiCd','NiMH','Lead','Alkaline','Zinc-Carbon','Mercury','Unknown','Data Error'];
 
 let state = {
-  user: null, accessToken: null, isAdmin: false,
+  user: null, accessToken: null, isAdmin: false, isReviewer: false,
   currentTask: null, timerStart: null, timerInterval: null,
   sessionCompleted: 0, sessionAgreed: 0, sessionDisagreed: 0,
 };
@@ -878,6 +885,15 @@ async function loadNextTask(){
 async function loadAdminDashboard(){
   setLoading(true,'Loading dashboard…');
   try {
+    // Reviewers only see disagreements tab — hide everything else
+    if(state.isReviewer && !state.isAdmin){
+      document.getElementById('tab-accuracy').style.display='none';
+      document.getElementById('tab-cw').style.display='none';
+      document.querySelector('.stats-grid').style.display='none';
+      document.getElementById('seed-banner').style.display='none';
+      // Switch to disagreements tab
+      switchTab('disagree');
+    }
     const [cData,aData,tData]=await Promise.all([
       sheetsGet(`${SHEETS.CONSENSUS}!A:W`),
       sheetsGet(`${SHEETS.ANN}!A:J`),
@@ -1017,6 +1033,7 @@ function renderCW(aRows, cRows){
 
 let _allDisPairs=[];
 let _p1EvidenceMap={};
+let _pendingGold={};  // rowNum → {gold, goldSub, goldLfp, goldEv, batteryId}
 
 function renderDisagreements(rows, p1EvidenceMap={}){
   const dis=rows.filter(r=>r[18]==='disagree');
@@ -1137,8 +1154,9 @@ function renderDisagreementCards(pairs){
           <textarea id="gold-ev-${i}" style="flex:1;font-size:12px;padding:6px 8px;min-height:60px;resize:vertical;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:3px;font-family:var(--sans)" placeholder="Evidence supporting the gold label…">${goldEvidence}</textarea>
         </div>
         <div class="gold-form-row">
-          <button class="btn-primary" onclick="setGoldLabel(${rowNum}, '${batteryId}', ${i})" style="padding:5px 14px;font-size:11px">Save &amp; update master dataset</button>
-          ${goldBy?`<span style="font-family:var(--mono);font-size:10px;color:var(--text-dim)">last saved by ${goldBy}</span>`:''}
+          <button class="btn-secondary" onclick="stageGoldLabel(${rowNum}, '${batteryId}', ${i})" style="padding:5px 14px;font-size:11px" id="stage-btn-${i}">✓ Stage gold</button>
+          <span id="stage-status-${i}" style="font-family:var(--mono);font-size:10px;color:var(--accent)"></span>
+          ${goldBy?`<span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:4px">previously saved by ${goldBy}</span>`:''}
         </div>
       </div>
     </div>`;
@@ -1188,58 +1206,107 @@ function goldSubChanged(idx){
   if(!needsLfp) lfpSel.value='';
 }
 
-async function setGoldLabel(rowNum, batteryId, idx){
-  const gold     = document.getElementById(`gold-lbl-${idx}`).value;
-  const goldSub  = document.getElementById(`gold-sub-${idx}`).value || '';
-  const goldLfp  = document.getElementById(`gold-lfp-${idx}`).value || '';
-  const goldEv   = document.getElementById(`gold-ev-${idx}`).value.trim();
+// ── Stage gold label locally (no API call) ──
+function stageGoldLabel(rowNum, batteryId, idx){
+  const gold    = document.getElementById(`gold-lbl-${idx}`).value;
+  const goldSub = document.getElementById(`gold-sub-${idx}`).value || '';
+  const goldLfp = document.getElementById(`gold-lfp-${idx}`).value || '';
+  const goldEv  = document.getElementById(`gold-ev-${idx}`).value.trim();
   if(!gold){ showToast('Select a label first','error'); return; }
   if(gold==='Lithium'&&!goldSub){ showToast('Select a sub-label for Lithium','error'); return; }
   if(!goldEv){ showToast('Evidence is required','error'); return; }
 
-  setLoading(true,'Saving gold label…');
+  // Store locally
+  _pendingGold[rowNum] = {gold, goldSub, goldLfp, goldEv, batteryId, idx};
+
+  // Update UI
+  const btn = document.getElementById(`stage-btn-${idx}`);
+  const status = document.getElementById(`stage-status-${idx}`);
+  if(btn){ btn.textContent='✓ Staged'; btn.style.borderColor='var(--accent)'; btn.style.color='var(--accent)'; }
+  if(status){ status.textContent='staged'; }
+
+  // Update pending count
+  const count = Object.keys(_pendingGold).length;
+  const countEl = document.getElementById('pending-count');
+  const saveBtn = document.getElementById('btn-save-all-gold');
+  if(countEl){ countEl.textContent = count+' staged'; countEl.style.display=''; }
+  if(saveBtn){ saveBtn.style.display=''; saveBtn.textContent=`↑ Save ${count} to master dataset`; }
+  showToast(`Staged — ${count} total pending`);
+}
+
+// ── Batch save all staged gold labels ──
+async function saveAllGoldLabels(){
+  const pending = Object.entries(_pendingGold);
+  if(!pending.length){ showToast('Nothing staged','error'); return; }
+  if(!confirm(`Save ${pending.length} gold label(s) to master dataset?
+
+This will update consensus_tasks and correct the tasks tab where pass-1 was wrong.`)) return;
+
+  setLoading(true, `Saving ${pending.length} gold labels…`);
   try {
-    // Read the consensus row to get pass1_row and both annotator answers
-    const rowData = await sheetsGet(`${SHEETS.CONSENSUS}!A${rowNum}:S${rowNum}`);
-    const r = ((rowData.values||[[]])[0]||[]);
-    while(r.length<19) r.push('');
+    // Read all consensus rows we need in one call to get pass1_row + annotator answers
+    const rowNums = pending.map(([rn])=>parseInt(rn));
+    const minRow = Math.min(...rowNums);
+    const maxRow = Math.max(...rowNums);
+    const rangeData = await sheetsGet(`${SHEETS.CONSENSUS}!A${minRow}:S${maxRow}`);
+    const rangeRows = rangeData.values || [];
 
-    const p1RowNum  = parseInt(r[6]);   // source row in tasks tab
-    const p1Label   = (r[1]||'').trim().toLowerCase();
-    const p1Sub     = (r[2]||'').trim().toLowerCase();
-    const p1Lfp     = (r[3]||'').trim().toLowerCase();
-    const p2Label   = (r[10]||'').trim().toLowerCase();
-    const p2Sub     = (r[11]||'').trim().toLowerCase();
-    const p2Lfp     = (r[12]||'').trim().toLowerCase();
+    let consensusWrites = [];
+    let taskWrites = [];
+    let corrected = 0, evidenceOnly = 0;
 
-    const gLower = gold.trim().toLowerCase();
-    const gSubL  = goldSub.trim().toLowerCase();
-    const gLfpL  = goldLfp.trim().toLowerCase();
+    for(const [rowNum, {gold, goldSub, goldLfp, goldEv, batteryId}] of pending){
+      const rn = parseInt(rowNum);
+      const r = (rangeRows[rn - minRow] || []);
+      while(r.length<19) r.push('');
 
-    const pass1Correct = p1Label===gLower && p1Sub===gSubL && p1Lfp===gLfpL ? 'Yes' : 'No';
-    const pass2Correct = p2Label===gLower && p2Sub===gSubL && p2Lfp===gLfpL ? 'Yes' : 'No';
+      const p1RowNum = parseInt(r[6]);
+      const p1Label  = (r[1]||'').trim().toLowerCase();
+      const p1Sub    = (r[2]||'').trim().toLowerCase();
+      const p1Lfp    = (r[3]||'').trim().toLowerCase();
+      const p2Label  = (r[10]||'').trim().toLowerCase();
+      const p2Sub    = (r[11]||'').trim().toLowerCase();
+      const p2Lfp    = (r[12]||'').trim().toLowerCase();
 
-    // Write to consensus_tasks: T=gold_label U=gold_sublabel V=gold_lfp W=gold_set_by X=gold_evidence Y=pass1_correct Z=pass2_correct
-    await sheetsUpdate(`${SHEETS.CONSENSUS}!T${rowNum}:Z${rowNum}`,[[ 
-      gold, goldSub, goldLfp, state.user.email, goldEv, pass1Correct, pass2Correct
-    ]]);
+      const gL = gold.trim().toLowerCase();
+      const gS = goldSub.trim().toLowerCase();
+      const gF = goldLfp.trim().toLowerCase();
 
-    // Update master tasks tab if pass-1 was wrong and we have the source row
-    if(pass1Correct==='No' && p1RowNum){
-      await sheetsUpdate(`${SHEETS.TASKS}!B${p1RowNum}:E${p1RowNum}`,[[ 
-        gold, goldSub, goldLfp, goldEv
-      ]]);
-      showToast(`Gold saved — pass-1 label corrected in master dataset (row ${p1RowNum})`);
-    } else if(pass1Correct==='Yes') {
-      // Pass-1 was right — just update evidence if it was weak
-      if(p1RowNum && goldEv) {
-        await sheetsUpdate(`${SHEETS.TASKS}!E${p1RowNum}`,[[goldEv]]);
+      const pass1Correct = p1Label===gL && p1Sub===gS && p1Lfp===gF ? 'Yes' : 'No';
+      const pass2Correct = p2Label===gL && p2Sub===gS && p2Lfp===gF ? 'Yes' : 'No';
+
+      // Queue consensus_tasks write
+      consensusWrites.push(sheetsUpdate(
+        `${SHEETS.CONSENSUS}!T${rn}:Z${rn}`,
+        [[gold, goldSub, goldLfp, state.user.email, goldEv, pass1Correct, pass2Correct]]
+      ));
+
+      // Queue tasks tab write
+      if(p1RowNum){
+        if(pass1Correct==='No'){
+          taskWrites.push(sheetsUpdate(`${SHEETS.TASKS}!B${p1RowNum}:E${p1RowNum}`,[[gold, goldSub, goldLfp, goldEv]]));
+          corrected++;
+        } else {
+          taskWrites.push(sheetsUpdate(`${SHEETS.TASKS}!E${p1RowNum}`,[[goldEv]]));
+          evidenceOnly++;
+        }
       }
-      showToast(`Gold saved — pass-1 was correct, master dataset updated with gold evidence`);
-    } else {
-      showToast(`Gold saved — no source row to update in master dataset`);
     }
 
+    // Execute all writes in parallel batches
+    setLoading(true, `Writing ${consensusWrites.length} consensus records…`);
+    await Promise.all(consensusWrites);
+    setLoading(true, `Updating ${taskWrites.length} master dataset rows…`);
+    await Promise.all(taskWrites);
+
+    // Clear pending
+    _pendingGold = {};
+    const countEl = document.getElementById('pending-count');
+    const saveBtn = document.getElementById('btn-save-all-gold');
+    if(countEl) countEl.style.display='none';
+    if(saveBtn) saveBtn.style.display='none';
+
+    showToast(`✓ Saved — ${corrected} labels corrected, ${evidenceOnly} evidence updated`);
     await loadAdminDashboard();
   } catch(e){
     showToast('Save failed: '+e.message,'error');
@@ -1346,16 +1413,25 @@ function initTokenClient(){
 
 async function signInUser(email){
   state.user={email};
-  state.isAdmin=CONFIG.ADMIN_EMAILS.includes(email);
-  document.getElementById('header-email').textContent=email;
+  state.isAdmin    = CONFIG.ADMIN_EMAILS.includes(email);
+  state.isReviewer = CONFIG.REVIEWER_EMAILS.includes(email);
+
+  document.getElementById('header-email').textContent =
+    email + (state.isAdmin ? ' (admin)' : state.isReviewer ? ' (reviewer)' : '');
   document.getElementById('header-email').style.display='';
   document.getElementById('btn-logout').style.display='';
+
   if(state.isAdmin){
     document.getElementById('btn-admin-toggle').style.display='';
-    // Admins go straight to dashboard — they can click "Start labeling" if they want tasks
+    showScreen('admin');
+    await loadAdminDashboard();
+  } else if(state.isReviewer){
+    // Reviewer — dashboard, disagreements tab only, no export/seed
+    document.getElementById('btn-export').style.display='none';
     showScreen('admin');
     await loadAdminDashboard();
   } else {
+    // Annotator — task queue
     setLoading(true, 'Loading your tasks…');
     await loadNextTask();
   }
