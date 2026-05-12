@@ -371,7 +371,7 @@ code{background:var(--surface2);padding:1px 5px;border-radius:2px;font-size:10px
 
 // The ONE hardcoded value across all apps — the config sheet ID.
 // This never changes. Everything else comes from the sheet.
-const CONFIG_SHEET_ID = '__CONFIG_SHEET_ID_PLACEHOLDER__';
+const CONFIG_SHEET_ID = '1axlYSB3d5H0tDO4M_UA73QmKUY60xkzTrUi2Wfz1cls';
 
 // Defaults — used if config sheet is unreachable or key is missing
 const CONFIG_DEFAULTS = {
@@ -393,11 +393,20 @@ const CONFIG_DEFAULTS = {
 
 async function loadRemoteConfig(accessToken) {
   try {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG_SHEET_ID}/values/config!A:B`;
-    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
+    // Use API key-free public read — works if sheet is shared as "Anyone with link can view"
+    // Falls back to authenticated read if that fails
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG_SHEET_ID}/values/config!A:B?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY`;
+    let res = await fetch(url);
+    if (!res.ok) {
+      // Fall back to authenticated read
+      res = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG_SHEET_ID}/values/config!A:B`,
+        { headers: { Authorization: 'Bearer ' + accessToken } }
+      );
+    }
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    const rows = (data.values || []).slice(1); // skip header
+    const rows = (data.values || []).slice(1);
     const cfg = { ...CONFIG_DEFAULTS };
     rows.forEach(r => { if (r[0] && r[1] !== undefined) cfg[r[0].trim()] = r[1].trim(); });
     return cfg;
