@@ -258,7 +258,6 @@ code{background:var(--surface2);padding:1px 5px;border-radius:2px;font-size:10px
     <div class="admin-btn-row">
       <button class="btn-secondary" id="btn-refresh">↻ Refresh</button>
       <button class="btn-secondary" id="btn-add-tasks">+ Add tasks</button>
-      <button class="btn-secondary" id="btn-export">↓ Export</button>
       <button class="btn-primary" id="btn-back-to-task" style="background:var(--surface2);color:var(--text);border:1px solid var(--border)">← Back to tasks</button>
     </div>
   </div>
@@ -312,10 +311,10 @@ code{background:var(--surface2);padding:1px 5px;border-radius:2px;font-size:10px
 
   <!-- CW performance tab -->
   <div id="pane-cw" style="display:none">
-    <div class="section-title">Per-annotator error count — flag if ≥2 disagreements, deep-dive if ≥3 or &gt;25% error rate</div>
+    <div class="section-title">Per-annotator accuracy — agreed tasks count as correct; disagreements resolved by gold standard</div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Annotator</th><th>Tasks sampled</th><th>Completed</th><th>Agreed</th><th>Disagreed</th><th>Error rate</th><th>Total time</th><th>Avg time/task</th><th>Last active</th><th>Status</th></tr></thead>
+        <thead><tr><th>Annotator</th><th>Sampled</th><th>Completed</th><th>Agreed</th><th>Disagreed</th><th>Gold resolved</th><th>Correct</th><th>Wrong</th><th>Pending gold</th><th>True accuracy</th><th>Total time</th><th>Avg/task</th><th>Last active</th><th>Status</th></tr></thead>
         <tbody id="tbody-cw"></tbody>
       </table>
     </div>
@@ -368,7 +367,7 @@ code{background:var(--surface2);padding:1px 5px;border-radius:2px;font-size:10px
 
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <script>
 // ═══════════════════════════════════════════════════════════════
 // CONFIG — loaded from remote config sheet after OAuth
@@ -602,13 +601,20 @@ async function sheetsAppend(range, values) {
   });
 }
 async function ensureSheet(name,headers){
-  const meta=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}`,{headers:{Authorization:'Bearer '+state.accessToken}});
-  const d=await meta.json();
+  // Uses sheetsRequest wrapper to handle 401 token refresh correctly
+  const d = await sheetsRequest(async()=>{
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}`,
+      {headers:{Authorization:'Bearer '+state.accessToken}});
+    return res.json();
+  });
   const exists=d.sheets?.some(s=>s.properties.title===name);
   if(!exists){
-    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}:batchUpdate`,{
-      method:'POST',headers:{Authorization:'Bearer '+state.accessToken,'Content-Type':'application/json'},
-      body:JSON.stringify({requests:[{addSheet:{properties:{title:name}}}]})
+    await sheetsRequest(async()=>{
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}:batchUpdate`,{
+        method:'POST',headers:{Authorization:'Bearer '+state.accessToken,'Content-Type':'application/json'},
+        body:JSON.stringify({requests:[{addSheet:{properties:{title:name}}}]})
+      });
+      return res.json();
     });
     await sheetsUpdate(`${name}!A1`,[[...headers]]);
   }
@@ -1033,50 +1039,102 @@ function renderAccuracy(rows){
 }
 
 function renderCW(aRows, cRows){
-  // Build map: annotator → their consensus tasks
-  const annTasks={};
+  // ── Accuracy model ──
+  // Agreed tasks    → pass-1 correct, pass-2 correct (no gold needed)
+  // Disagreed tasks → accuracy determined by gold standard (pass1_correct / pass2_correct cols Z-AA)
+  // Disagreed without gold → pending (excluded from accuracy calculation)
+
+  const annStats={};
+
+  // Process pass-1 annotators (original_annotator = col E, index 4)
   cRows.forEach(r=>{
-    const ann=r[4]; // original_annotator
-    if(!ann) return;
-    if(!annTasks[ann]) annTasks[ann]={sampled:0,completed:0,agreed:0,disagreed:0};
-    annTasks[ann].sampled++;
-    if(r[8]==='complete'){ annTasks[ann].completed++; if(r[18]==='agree') annTasks[ann].agreed++; else annTasks[ann].disagreed++; }
+    const p1ann = r[4];
+    if(!p1ann || r[8]!=='complete') return;
+    if(!annStats[p1ann]) annStats[p1ann]={sampled:0,completed:0,agreed:0,disagreed:0,p1Correct:0,p1Wrong:0,p1Pending:0};
+    annStats[p1ann].sampled++;
+    annStats[p1ann].completed++;
+    if(r[18]==='agree'){
+      annStats[p1ann].agreed++;
+      annStats[p1ann].p1Correct++; // agreed = correct for both passes
+    } else {
+      annStats[p1ann].disagreed++;
+      // Check if gold has been set (col Z = pass1_correct, index 25)
+      while(r.length<27) r.push('');
+      if(r[25]==='Yes')       annStats[p1ann].p1Correct++;
+      else if(r[25]==='No')   annStats[p1ann].p1Wrong++;
+      else                    annStats[p1ann].p1Pending++;
+    }
   });
 
-  const tbody=document.getElementById('tbody-cw');
-  // Build time map from annotators sheet (cols F=total_time G=avg_time H=last_active)
-  const timeMap={};
-  aRows.forEach(r=>{ if(r[0]) timeMap[r[0]]={totalTime:parseInt(r[5])||0, avgTime:parseInt(r[6])||0, lastActive:r[7]||''}; });
+  // Process pass-2 annotators (assigned_to = col H, index 7)
+  cRows.forEach(r=>{
+    const p2ann = r[7];
+    if(!p2ann || r[8]!=='complete') return;
+    if(!annStats[p2ann]) annStats[p2ann]={sampled:0,completed:0,agreed:0,disagreed:0,p2Correct:0,p2Wrong:0,p2Pending:0};
+    // Don't double-count sampled/completed for pass-2
+    if(r[18]==='agree'){
+      annStats[p2ann].p2Correct = (annStats[p2ann].p2Correct||0) + 1;
+    } else {
+      while(r.length<27) r.push('');
+      if(r[26]==='Yes')       annStats[p2ann].p2Correct = (annStats[p2ann].p2Correct||0) + 1;
+      else if(r[26]==='No')   annStats[p2ann].p2Wrong   = (annStats[p2ann].p2Wrong||0)   + 1;
+      else                    annStats[p2ann].p2Pending  = (annStats[p2ann].p2Pending||0)  + 1;
+    }
+  });
 
-  const sorted=Object.entries(annTasks).sort((a,b)=>b[1].disagreed-a[1].disagreed);
+  const timeMap={};
+  aRows.forEach(r=>{ if(r[0]) timeMap[r[0]]={totalTime:parseInt(r[5])||0,avgTime:parseInt(r[6])||0,lastActive:r[7]||''}; });
+
+  const tbody=document.getElementById('tbody-cw');
+  const sorted=Object.entries(annStats).sort((a,b)=>(b[1].p1Wrong||0)+(b[1].p2Wrong||0)-(a[1].p1Wrong||0)-(a[1].p2Wrong||0));
+
   tbody.innerHTML=sorted.map(([ann,d])=>{
-    const errorRate=d.completed?d.disagreed/d.completed:0;
-    const isDeepDive=d.disagreed>=CONFIG.DEEPDIVE_THRESHOLD||errorRate>CONFIG.DEEPDIVE_ERROR_RATE;
-    const isFlag=d.disagreed>=CONFIG.FLAG_THRESHOLD&&!isDeepDive;
-    const statusBadge=isDeepDive
-      ?'<span class="badge badge-red">⚠ deep-dive</span>'
-      :isFlag?'<span class="badge badge-yellow">⚑ flagged</span>'
-      :d.completed>0?'<span class="badge badge-green">✓ ok</span>'
-      :'<span class="badge badge-gray">pending</span>';
+    // True accuracy: correct / (correct + wrong) — excludes pending
+    const correct  = (d.p1Correct||0) + (d.p2Correct||0);
+    const wrong    = (d.p1Wrong||0)   + (d.p2Wrong||0);
+    const pending  = (d.p1Pending||0) + (d.p2Pending||0);
+    const resolved = correct + wrong;
+    const accuracy = resolved > 0 ? correct / resolved : null;
+
+    // Flags based on wrong count and accuracy
+    const isDeepDive = wrong >= CONFIG.DEEPDIVE_THRESHOLD || (accuracy !== null && (1-accuracy) > CONFIG.DEEPDIVE_ERROR_RATE);
+    const isFlag     = wrong >= CONFIG.FLAG_THRESHOLD && !isDeepDive;
+    const statusBadge = isDeepDive
+      ? '<span class="badge badge-red">⚠ deep-dive</span>'
+      : isFlag
+        ? '<span class="badge badge-yellow">⚑ flagged</span>'
+        : d.completed > 0
+          ? '<span class="badge badge-green">✓ ok</span>'
+          : '<span class="badge badge-gray">pending</span>';
+
+    const accuracyFmt = accuracy !== null
+      ? `<span style="color:${accuracy<0.85?'var(--red)':accuracy<0.95?'var(--warn)':'var(--accent)'}">${(accuracy*100).toFixed(0)}%</span>`
+      : `<span style="color:var(--text-dim)">—</span>`;
+    const pendingFmt  = pending > 0
+      ? `<span style="color:var(--text-muted)">${pending}</span>`
+      : `<span style="color:var(--text-dim)">—</span>`;
+
+    const t=timeMap[ann]||{};
     const shortAnn=ann.split('@')[0];
     const rowClass=isDeepDive?'deepdive-row':isFlag?'flag-row':'';
-    const t=timeMap[ann]||{};
-    const totalFmt=t.totalTime?fmtTime(t.totalTime):'—';
-    const avgFmt=t.avgTime?fmtTime(t.avgTime):'—';
-    const lastFmt=t.lastActive?new Date(t.lastActive).toLocaleString():'—';
+
     return `<tr class="${rowClass}">
       <td style="font-family:var(--mono);font-size:12px">${shortAnn}</td>
-      <td>${d.sampled}</td>
-      <td>${d.completed}</td>
-      <td style="color:var(--green)">${d.agreed}</td>
-      <td style="color:${d.disagreed>=2?'var(--red)':'var(--text)'}">${d.disagreed}</td>
-      <td style="font-family:var(--mono);font-size:12px;color:${errorRate>0.15?'var(--warn)':'var(--text-muted)'}">${d.completed?(errorRate*100).toFixed(0)+'%':'—'}</td>
-      <td style="font-family:var(--mono);font-size:12px;color:var(--text-muted)">${totalFmt}</td>
-      <td style="font-family:var(--mono);font-size:12px;color:var(--text-muted)">${avgFmt}</td>
-      <td style="font-size:11px;color:var(--text-dim)">${lastFmt}</td>
+      <td>${d.sampled||'—'}</td>
+      <td>${d.completed||'—'}</td>
+      <td style="color:var(--accent)">${d.agreed||0}</td>
+      <td style="color:${(d.disagreed||0)>=2?'var(--warn)':'var(--text)'}">${d.disagreed||0}</td>
+      <td style="color:var(--text-muted)">${resolved||'—'}</td>
+      <td style="color:var(--accent)">${correct||'—'}</td>
+      <td style="color:${wrong>0?'var(--red)':'var(--text-dim)'}">${wrong||'—'}</td>
+      <td>${pendingFmt}</td>
+      <td>${accuracyFmt}</td>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--text-muted)">${t.totalTime?fmtTime(t.totalTime):'—'}</td>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--text-muted)">${t.avgTime?fmtTime(t.avgTime):'—'}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${t.lastActive?new Date(t.lastActive).toLocaleString():'—'}</td>
       <td>${statusBadge}</td>
     </tr>`;
-  }).join('');
+  }).join('') || '<tr><td colspan="14" style="text-align:center;color:var(--text-dim);padding:24px">No data yet</td></tr>';
 }
 
 let _allDisPairs=[];
@@ -1415,11 +1473,12 @@ function stageGoldLabel(rowNum, batteryId, idx){
   if(saveBtn) saveBtn.textContent = `↑ Save ${count} to master dataset`;
   showToast(`Staged — ${count} total pending`);
 
-  // Remind to save every 25 staged labels
+  // Non-blocking reminder at every 25 staged labels
   if(count > 0 && count % 25 === 0){
-    if(confirm(`You have ${count} labels staged.\n\nRecommended: save now to avoid losing work if your session expires.\n\nSave now?`)){
-      saveAllGoldLabels();
-    }
+    const t = document.getElementById('toast');
+    t.innerHTML = `${count} labels staged — <button onclick="saveAllGoldLabels();this.parentElement.className=''" style="background:none;border:1px solid currentColor;border-radius:3px;color:inherit;font-family:var(--mono);font-size:11px;padding:2px 8px;cursor:pointer;margin-left:6px">Save now</button>`;
+    t.className = 'show success';
+    clearTimeout(t._t); t._t = setTimeout(() => { t.className=''; t.textContent=''; }, 8000);
   }
 }
 
@@ -1535,60 +1594,6 @@ This will update consensus_tasks and correct the tasks tab where pass-1 was wron
 
 // ═══════════════════════════════════════════════════════════════
 // EXPORT
-// ═══════════════════════════════════════════════════════════════
-async function exportResults(){
-  setLoading(true,'Exporting…');
-  try {
-    const [cData,aData]=await Promise.all([
-      sheetsGet(`${SHEETS.CONSENSUS}!A:W`),
-      sheetsGet(`${SHEETS.ANN}!A:J`)
-    ]); // export doesn't need tasks evidence
-    const cRows=(cData.values||[]).slice(1).filter(r=>r[0]&&r[8]==='complete');
-    const aRows=(aData.values||[]).slice(1).filter(r=>r[0]);
-
-    const wb=XLSX.utils.book_new();
-
-    // Sheet 1: all completed consensus tasks
-    const ws1=XLSX.utils.aoa_to_sheet([
-      ['battery_id','stratum','original_annotator','original_label','original_sublabel','original_lfp',
-       'consensus_annotator','consensus_label','consensus_sublabel','consensus_lfp',
-       'consensus_status','gold_label','time_taken_s'],
-      ...cRows.map(r=>[r[0],r[5],r[4],r[1],r[2],r[3],r[7],r[10],r[11],r[12],r[18],r[19]||'',r[17]])
-    ]);
-    XLSX.utils.book_append_sheet(wb,ws1,'Consensus Tasks');
-
-    // Sheet 2: CW performance
-    const ws2=XLSX.utils.aoa_to_sheet([
-      ['annotator','tasks_sampled','completed','agreements','disagreements','error_rate','total_time_seconds','avg_time_seconds','last_active','status'],
-      ...aRows.map(r=>{
-        const dis=parseInt(r[3])||0; const er=parseFloat(r[4])||0;
-        const status=dis>=CONFIG.DEEPDIVE_THRESHOLD||er>CONFIG.DEEPDIVE_ERROR_RATE?'deep-dive':dis>=CONFIG.FLAG_THRESHOLD?'flagged':'ok';
-        return [r[0],'-',r[1],r[2],r[3],r[4],r[5]||0,r[6]||0,r[7]||'',status];
-      })
-    ]);
-    XLSX.utils.book_append_sheet(wb,ws2,'CW Performance');
-
-    // Sheet 3: disagreements with gold labels
-    const dis=cRows.filter(r=>r[18]==='disagree');
-    const ws3=XLSX.utils.aoa_to_sheet([
-      ['battery_id','stratum','pass1_annotator','pass1_label','pass1_sublabel','pass1_lfp',
-       'pass2_annotator','pass2_label','pass2_sublabel','pass2_lfp','gold_label','gold_sublabel','gold_lfp','gold_set_by','same_annotator_warning'],
-      ...dis.map(r=>{
-        const sameAnn = r[4]&&r[7]&&r[4].toLowerCase()===r[7].toLowerCase();
-        return [r[0],r[5],r[4],r[1],r[2],r[3],r[7],r[10],r[11],r[12],r[19]||'',r[20]||'',r[21]||'',r[22]||'',
-          sameAnn?'YES — same person did both passes':''];
-      })
-    ]);
-    XLSX.utils.book_append_sheet(wb,ws3,'Disagreements');
-
-    XLSX.writeFile(wb,`consensus_results_${new Date().toISOString().slice(0,10)}.xlsx`);
-    showToast('Exported successfully');
-  } catch(e){ showToast('Export failed: '+e.message,'error'); }
-  setLoading(false);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TAB SWITCHING
 // ═══════════════════════════════════════════════════════════════
 function switchTab(tab){
   ['accuracy','cw','disagree'].forEach(t=>{
@@ -1773,7 +1778,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('add-tasks-input').addEventListener('keydown',(e)=>{
     if(e.ctrlKey&&e.key==='Enter') addSpecificTasks();
   });
-  document.getElementById('btn-export').addEventListener('click',exportResults);
+
   document.getElementById('btn-seed').addEventListener('click',seedConsensusQueue);
 });
 </script>
