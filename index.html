@@ -6,2126 +6,758 @@
 <title>Battery Labeling — CloudFactory</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0f0f0f;
-    --surface: #1a1a1a;
-    --surface2: #222222;
-    --border: #2e2e2e;
-    --border-bright: #444;
-    --text: #e8e8e8;
-    --text-muted: #888;
-    --text-dim: #555;
-    --accent: #00d4a0;
-    --accent-dim: rgba(0,212,160,0.12);
-    --accent-glow: rgba(0,212,160,0.25);
-    --warn: #f5a623;
-    --warn-dim: rgba(245,166,35,0.12);
-    --error: #ff5f5f;
-    --error-dim: rgba(255,95,95,0.1);
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'IBM Plex Sans', sans-serif;
-  }
+:root{
+  --bg:#0f0f0f;--surface:#1a1a1a;--surface2:#222;--border:#2e2e2e;--border-bright:#444;
+  --text:#e8e8e8;--text-muted:#888;--text-dim:#555;
+  --accent:#00d4a0;--accent-dim:rgba(0,212,160,0.12);--accent-glow:rgba(0,212,160,0.25);
+  --warn:#f5a623;--warn-dim:rgba(245,166,35,0.12);
+  --error:#ff5f5f;--error-dim:rgba(255,95,95,0.1);
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.08em;color:var(--accent)}
+.logo span{color:var(--text-muted);font-weight:400}
+.hdr-r{display:flex;align-items:center;gap:16px}
+.user-badge{font-family:var(--mono);font-size:11px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);padding:4px 10px;border-radius:3px;display:none}
+.btn-ghost{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--text-muted);background:none;border:1px solid var(--border);padding:5px 12px;border-radius:3px;cursor:pointer;transition:all .15s;display:none}
+.btn-ghost:hover{border-color:var(--border-bright);color:var(--text)}
+main{max-width:900px;margin:0 auto;padding:20px 32px;width:100%}
+.screen{display:none}.screen.active{display:block}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+/* LOGIN */
+#screen-login.active{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px)}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:48px;width:420px;text-align:center}
+.login-card h2{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--accent);margin-bottom:8px}
+.login-card p{color:var(--text-muted);font-size:13px;margin-bottom:32px;line-height:1.6}
+.google-btn{width:100%;background:#fff;color:#333;border:none;border-radius:4px;padding:12px 20px;font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s}
+.google-btn:hover{background:#f0f0f0;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.3)}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 14px;
-    min-height: 100vh;
-  }
+/* ANNOTATION */
+.ann-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:20px}
+.battery-id{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--text);letter-spacing:.04em}
+.progress-wrap{text-align:right;flex-shrink:0}
+.progress-label{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:6px}
+.progress-bar-outer{width:180px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:4px}
+.progress-bar-inner{height:100%;background:var(--accent);border-radius:2px;transition:width .4s}
+.progress-count{font-family:var(--mono);font-size:10px;color:var(--text-dim)}
+.form-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px}
+.field-group{margin-bottom:10px}
+label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+input[type=text],input[type=email],select,textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--sans);font-size:14px;padding:7px 12px;outline:none;transition:border-color .15s;appearance:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer}
+select option{background:var(--surface2)}
+textarea{resize:vertical;min-height:52px;line-height:1.5}
+.conditional-fields{background:var(--accent-dim);border:1px solid var(--accent-glow);border-radius:4px;padding:10px;margin-top:-4px;margin-bottom:10px;display:none}
+.conditional-fields.visible{display:block}
+.conditional-label{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+.checkbox-field{display:flex;align-items:center;gap:12px;cursor:pointer;padding:7px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;transition:all .15s}
+.checkbox-field:hover{border-color:var(--border-bright)}
+.checkbox-field input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.form-divider{height:1px;background:var(--border);margin:10px 0}
+.form-actions{display:flex;align-items:center;gap:12px;margin-top:12px}
+.btn-primary{background:var(--accent);color:#0f0f0f;border:none;border-radius:4px;padding:11px 24px;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.06em;cursor:pointer;transition:all .15s;text-transform:uppercase}
+.btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:10px 20px;font-family:var(--mono);font-size:12px;letter-spacing:.04em;cursor:pointer;transition:all .15s}
+.btn-secondary:hover{border-color:var(--border-bright)}
+.timer-badge{font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-left:auto}
 
-  /* ── LAYOUT ── */
-  #app { display: flex; flex-direction: column; min-height: 100vh; }
+/* DONE */
+#screen-done.active,#screen-goodbye.active{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px)}
+.done-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:48px;max-width:480px;text-align:center}
+.done-icon{font-size:32px;margin-bottom:16px}
+.done-card h2{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--accent);margin-bottom:8px}
+.done-card p{color:var(--text-muted);font-size:13px;line-height:1.6}
 
-  header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0 32px;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky; top: 0; z-index: 100;
-  }
-
-  .logo {
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    color: var(--accent);
-  }
-  .logo span { color: var(--text-muted); font-weight: 400; }
-
-  .header-right {
-    display: flex; align-items: center; gap: 16px;
-  }
-
-  .user-badge {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-muted);
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    padding: 4px 10px;
-    border-radius: 3px;
-  }
-
-  .btn-ghost {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
-    background: none;
-    border: 1px solid var(--border);
-    padding: 5px 12px;
-    border-radius: 3px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .btn-ghost:hover { border-color: var(--border-bright); color: var(--text); }
-
-  main { flex: 1; padding: 20px 32px; max-width: 900px; margin: 0 auto; width: 100%; }
-
-  /* ── SCREENS ── */
-  .screen { display: none; }
-  .screen.active { display: block; }
-
-  /* ── LOGIN SCREEN ── */
-  #screen-login {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    min-height: calc(100vh - 56px);
-  }
-  #screen-login.active { display: flex; }
-
-  .login-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 48px;
-    width: 420px;
-    text-align: center;
-  }
-
-  .login-card h2 {
-    font-family: var(--mono);
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--accent);
-    margin-bottom: 8px;
-  }
-  .login-card p {
-    color: var(--text-muted);
-    font-size: 13px;
-    margin-bottom: 32px;
-    line-height: 1.6;
-  }
-
-  .google-btn {
-    width: 100%;
-    background: #fff;
-    color: #333;
-    border: none;
-    border-radius: 4px;
-    padding: 12px 20px;
-    font-family: var(--sans);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    transition: all 0.15s;
-    margin-bottom: 12px;
-  }
-  .google-btn:hover { background: #f0f0f0; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-
-  .or-divider {
-    display: flex; align-items: center; gap: 12px;
-    margin: 16px 0;
-    color: var(--text-dim);
-    font-size: 11px;
-    font-family: var(--mono);
-  }
-  .or-divider::before, .or-divider::after {
-    content: ''; flex: 1; height: 1px; background: var(--border);
-  }
-
-  /* ── SETUP SCREEN ── */
-  #screen-setup { padding: 20px 0; }
-
-  .setup-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 32px;
-    max-width: 680px;
-  }
-
-  .setup-card h2 {
-    font-family: var(--mono);
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 6px;
-  }
-  .setup-card .subtitle {
-    color: var(--text-muted);
-    font-size: 13px;
-    margin-bottom: 28px;
-    line-height: 1.6;
-  }
-
-  .step {
-    display: flex;
-    gap: 16px;
-    padding: 20px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .step:last-of-type { border-bottom: none; }
-
-  .step-num {
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--accent);
-    background: var(--accent-dim);
-    border: 1px solid var(--accent-glow);
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-
-  .step-content h3 {
-    font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 6px;
-  }
-  .step-content p {
-    color: var(--text-muted);
-    font-size: 12px;
-    line-height: 1.6;
-    margin-bottom: 10px;
-  }
-
-  code {
-    font-family: var(--mono);
-    font-size: 11px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    padding: 2px 6px;
-    border-radius: 3px;
-    color: var(--accent);
-  }
-
-  .code-block {
-    font-family: var(--mono);
-    font-size: 11px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 12px 14px;
-    color: var(--text-muted);
-    margin: 8px 0;
-    line-height: 1.7;
-    white-space: pre-wrap;
-    word-break: break-all;
-  }
-
-  /* ── FORM ELEMENTS ── */
-  .field-group { margin-bottom: 10px; }
-
-  label {
-    display: block;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-
-  input[type="text"], input[type="email"], select, textarea {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 14px;
-    padding: 7px 12px;
-    outline: none;
-    transition: border-color 0.15s;
-    appearance: none;
-  }
-  input:focus, select:focus, textarea:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-dim);
-  }
-  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
-  select option { background: var(--surface2); }
-  textarea { resize: vertical; min-height: 52px; line-height: 1.5; }
-  input::placeholder, textarea::placeholder { color: var(--text-dim); }
-
-  .btn-primary {
-    background: var(--accent);
-    color: #0f0f0f;
-    border: none;
-    border-radius: 4px;
-    padding: 11px 24px;
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-transform: uppercase;
-  }
-  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
-  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-  .btn-secondary {
-    background: var(--surface2);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 10px 20px;
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .btn-secondary:hover { border-color: var(--border-bright); }
-
-  /* ── ANNOTATION SCREEN ── */
-  .annotation-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 12px;
-    gap: 20px;
-  }
-
-  .task-meta h2 {
-    font-family: var(--mono);
-    font-size: 14px;
-    color: var(--text-muted);
-    font-weight: 400;
-    margin-bottom: 6px;
-  }
-
-  .battery-id {
-    font-family: var(--mono);
-    font-size: 22px;
-    font-weight: 600;
-    color: var(--text);
-    letter-spacing: 0.04em;
-  }
-
-  .progress-wrap {
-    text-align: right;
-    flex-shrink: 0;
-  }
-
-  .progress-label {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-  }
-
-  .progress-bar-outer {
-    width: 180px;
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-    margin-bottom: 4px;
-  }
-  .progress-bar-inner {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 2px;
-    transition: width 0.4s ease;
-  }
-
-  .progress-count {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text-dim);
-  }
-
-  .form-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 16px;
-  }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-
-  .form-divider {
-    height: 1px;
-    background: var(--border);
-    margin: 10px 0;
-  }
-
-  .conditional-fields {
-    background: var(--accent-dim);
-    border: 1px solid var(--accent-glow);
-    border-radius: 4px;
-    padding: 10px;
-    margin-top: -4px;
-    margin-bottom: 10px;
-    display: none;
-  }
-  .conditional-fields.visible { display: block; }
-  .conditional-fields .field-group { margin-bottom: 16px; }
-  .conditional-fields .field-group:last-child { margin-bottom: 0; }
-
-  .conditional-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--accent);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .conditional-label::before {
-    content: '↳';
-    font-size: 12px;
-  }
-
-  /* Checkbox */
-  .checkbox-field {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    padding: 7px 12px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    transition: all 0.15s;
-  }
-  .checkbox-field:hover { border-color: var(--border-bright); }
-
-  .checkbox-field input[type="checkbox"] {
-    width: 16px; height: 16px;
-    accent-color: var(--accent);
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-
-  .checkbox-label-text {
-    font-size: 13px;
-    color: var(--text);
-    user-select: none;
-    line-height: 1.4;
-  }
-
-  .form-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 12px;
-    align-items: center;
-  }
-
-  .timer-badge {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-left: auto;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    padding: 5px 10px;
-    border-radius: 3px;
-  }
-
-  /* ── DONE SCREEN ── */
-  #screen-done {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    min-height: calc(100vh - 56px);
-  }
-  #screen-done.active { display: flex; }
-
-  .done-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 48px;
-    max-width: 480px;
-    text-align: center;
-  }
-  .done-icon {
-    font-size: 40px;
-    margin-bottom: 16px;
-  }
-  .done-card h2 {
-    font-family: var(--mono);
-    font-size: 18px;
-    margin-bottom: 8px;
-    color: var(--accent);
-  }
-  .done-card p { color: var(--text-muted); font-size: 13px; line-height: 1.6; }
-
-  /* ── ADMIN SCREEN ── */
-  .admin-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 28px;
-  }
-
-  .admin-header h2 {
-    font-family: var(--mono);
-    font-size: 18px;
-    font-weight: 600;
-  }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin-bottom: 28px;
-  }
-
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 20px;
-  }
-  .stat-card .stat-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 8px;
-  }
-  .stat-card .stat-value {
-    font-family: var(--mono);
-    font-size: 28px;
-    font-weight: 600;
-    color: var(--accent);
-    line-height: 1;
-  }
-  .stat-card .stat-sub {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-dim);
-    margin-top: 4px;
-  }
-
-  .section-title {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  /* ── TABLE ── */
-  .table-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    overflow: hidden;
-    margin-bottom: 28px;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  th {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    padding: 10px 14px;
-    text-align: left;
-    background: var(--surface2);
-    border-bottom: 1px solid var(--border);
-  }
-
-  td {
-    font-size: 13px;
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
-    color: var(--text);
-  }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: rgba(255,255,255,0.02); }
-
-  .badge {
-    font-family: var(--mono);
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 2px;
-    letter-spacing: 0.04em;
-  }
-  .badge-green { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent-glow); }
-  .badge-yellow { background: var(--warn-dim); color: var(--warn); border: 1px solid rgba(245,166,35,0.3); }
-  .badge-gray { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
-
-  /* ── TOAST ── */
-  #toast {
-    position: fixed;
-    bottom: 24px; right: 24px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 12px 18px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text);
-    opacity: 0;
-    transform: translateY(8px);
-    transition: all 0.2s;
-    pointer-events: none;
-    z-index: 999;
-    max-width: 320px;
-  }
-  #toast.show { opacity: 1; transform: translateY(0); }
-  #toast.success { border-color: var(--accent-glow); color: var(--accent); }
-  #toast.error { border-color: rgba(255,95,95,0.3); color: var(--error); }
-
-  /* ── LOADING ── */
-  .spinner {
-    width: 18px; height: 18px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    display: inline-block;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .loading-overlay {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(15,15,15,0.7);
-    z-index: 200;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .loading-overlay.active { display: flex; }
-  .loading-overlay p {
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--text-muted);
-  }
-
-  /* ── INSTRUCTIONS PANEL ── */
-  .instructions-banner {
-    background: var(--warn-dim);
-    border: 1px solid rgba(245,166,35,0.3);
-    border-radius: 4px;
-    padding: 12px 16px;
-    margin-bottom: 20px;
-    font-size: 12px;
-    color: var(--warn);
-    line-height: 1.6;
-    font-family: var(--mono);
-  }
-
-  /* ── OVERALL PROGRESS BAR ── */
-  .big-progress {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 20px;
-    margin-bottom: 20px;
-  }
-  .big-progress-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 10px;
-  }
-  .big-progress-label { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
-  .big-progress-pct { font-family: var(--mono); font-size: 22px; font-weight: 600; color: var(--accent); }
-  .big-bar-outer { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
-  .big-bar-inner { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.6s ease; }
-
-  @media (max-width: 640px) {
-    main { padding: 24px 16px; }
-    .stats-grid { grid-template-columns: 1fr 1fr; }
-    .form-row { grid-template-columns: 1fr; }
-    .annotation-header { flex-direction: column; }
-    .progress-wrap { text-align: left; }
-    .progress-bar-outer { width: 100%; }
-  }
+/* ADMIN */
+.admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.admin-header h2{font-family:var(--mono);font-size:16px;font-weight:600}
+.admin-btn-row{display:flex;gap:10px}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stats-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 20px}
+.stat-label{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px}
+.stat-value{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--accent)}
+.big-bar-outer{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin:8px 0 4px}
+.big-bar-inner{height:100%;background:var(--accent);border-radius:3px;transition:width .4s}
+.section-title{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;margin-top:24px}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow-x:auto;margin-bottom:24px}
+table{width:100%;border-collapse:collapse}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);padding:9px 12px;text-align:left;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap}
+td{font-size:13px;padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(15,15,15,.7);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.loading-overlay.active{display:flex}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:12px 18px;font-family:var(--mono);font-size:12px;color:var(--text);opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;z-index:999;max-width:360px}
+#toast.show{opacity:1;transform:translateY(0)}
+#toast.error{border-color:rgba(255,95,95,.3);color:var(--error)}
+#toast.success{border-color:var(--accent-glow);color:var(--accent)}
 </style>
 </head>
 <body>
+<header>
+  <div class="logo">CF<span>/</span>LABEL</div>
+  <div class="hdr-r">
+    <span class="user-badge" id="header-email"></span>
+    <button class="btn-ghost" id="btn-admin-toggle">Admin View</button>
+    <button class="btn-ghost" id="btn-logout">Sign out</button>
+  </div>
+</header>
+<main>
 
-<div id="app">
-  <header>
-    <div class="logo">CF<span>/</span>BATTERY-LABEL</div>
-    <div class="header-right">
-      <span class="user-badge" id="header-email" style="display:none"></span>
-      <button class="btn-ghost" id="btn-admin-toggle" style="display:none">Admin View</button>
-      <button class="btn-ghost" id="btn-logout" style="display:none">Sign out</button>
+<!-- LOGIN -->
+<div class="screen" id="screen-login">
+  <div class="login-card">
+    <h2>Battery Labeling</h2>
+    <p>Sign in with your CloudFactory Google account to begin annotating.</p>
+    <button class="google-btn" id="btn-signin">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+      Continue with Google
+    </button>
+    <p style="color:var(--text-dim);font-size:11px;margin-top:16px;font-family:var(--mono)">@cloudfactory.com or @es.cloudfactory.com</p>
+  </div>
+</div>
+
+<!-- ANNOTATION -->
+<div class="screen" id="screen-annotate">
+  <div class="ann-header">
+    <div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:6px">Battery Identifier</div>
+      <div class="battery-id" id="display-battery-id">—</div>
     </div>
-  </header>
-
-  <main>
-    <!-- LOGIN -->
-    <div class="screen" id="screen-login">
-      <div class="login-card">
-        <h2>Battery Labeling</h2>
-        <p>Sign in with your Google account to begin annotating battery chemistry data for Redwood Materials.</p>
-        <button class="google-btn" id="btn-google-signin">
-          <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
-          Continue with Google
-        </button>
-        <p style="color:var(--text-dim);font-size:11px;margin-top:16px;font-family:var(--mono);">Sign in with the @es.cloudfactory.com Google account provided to CloudFactory.</p>
-      </div>
+    <div class="progress-wrap">
+      <div class="progress-label">Your progress</div>
+      <div class="progress-bar-outer"><div class="progress-bar-inner" id="user-progress-bar" style="width:0%"></div></div>
+      <div class="progress-count" id="user-progress-count">0 completed</div>
     </div>
-
-    <!-- SETUP INSTRUCTIONS -->
-    <div class="screen" id="screen-setup">
-      <div class="setup-card">
-        <h2>One-time Setup Required</h2>
-        <p class="subtitle">Before the app can work, a Google Sheet needs to be connected as the database. This takes about 5 minutes and only needs to be done once.</p>
-
-        <div class="step">
-          <div class="step-num">1</div>
-          <div class="step-content">
-            <h3>Create a Google Sheet</h3>
-            <p>Go to <a href="https://sheets.new" target="_blank" style="color:var(--accent)">sheets.new</a> and create a blank spreadsheet. Name it something like <strong>Battery Labeling DB</strong>.</p>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="step-num">2</div>
-          <div class="step-content">
-            <h3>Enable Google Sheets API</h3>
-            <p>Go to <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent)">Google Cloud Console</a> → Create a new project → Enable the <strong>Google Sheets API</strong> and <strong>Google Drive API</strong>.</p>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="step-num">3</div>
-          <div class="step-content">
-            <h3>Create OAuth Credentials</h3>
-            <p>In Cloud Console → APIs & Services → Credentials → Create OAuth 2.0 Client ID → Web Application. Add your app URL as an authorized origin. Copy the <strong>Client ID</strong>.</p>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="step-num">4</div>
-          <div class="step-content">
-            <h3>Enter credentials below</h3>
-            <div class="field-group" style="margin-top:12px">
-              <label>Google OAuth Client ID</label>
-              <input type="text" id="input-client-id" placeholder="xxxx.apps.googleusercontent.com" />
-            </div>
-            <div class="field-group">
-              <label>Google Sheet ID</label>
-              <input type="text" id="input-sheet-id" placeholder="From the URL: /d/SHEET_ID/edit" />
-              <p style="margin-top:6px; font-size:11px; color:var(--text-dim)">Found in your spreadsheet URL between /d/ and /edit</p>
-            </div>
-            <div class="field-group">
-              <label>Admin Emails (comma-separated)</label>
-              <input type="text" id="input-admins" value="ayush.siddhi@cloudfactory.com" />
-            </div>
-            <button class="btn-primary" id="btn-save-setup">Save & Launch App</button>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="step-num">5</div>
-          <div class="step-content">
-            <h3>Import your data</h3>
-            <p>Once set up, sign in as admin and use the <strong>Import Data</strong> button to upload your Excel file. The app will flatten all date sheets into the tasks sheet automatically.</p>
-          </div>
-        </div>
-      </div>
+  </div>
+  <div class="form-card">
+    <div class="field-group">
+      <label>Label *</label>
+      <select id="field-label">
+        <option value="">— Select label —</option>
+        <option>Lithium</option><option>NiMH</option><option>NiCd</option>
+        <option>Lead</option><option>Alkaline</option><option>Zinc-Carbon</option>
+        <option>Silver</option><option>Mercury</option><option>Arsenic</option>
+        <option>Unknown</option><option>Data Error</option>
+      </select>
     </div>
-
-    <!-- ANNOTATION -->
-    <div class="screen" id="screen-annotate">
-      <div class="annotation-header">
-        <div class="task-meta">
-          <h2>Battery Identifier</h2>
-          <div class="battery-id" id="display-battery-id">—</div>
-        </div>
-        <div class="progress-wrap">
-          <div class="progress-label">Your progress</div>
-          <div class="progress-bar-outer">
-            <div class="progress-bar-inner" id="user-progress-bar" style="width:0%"></div>
-          </div>
-          <div class="progress-count" id="user-progress-count">0 completed</div>
-        </div>
+    <div class="conditional-fields" id="lithium-fields">
+      <div class="conditional-label">↳ Lithium sub-classification</div>
+      <div class="field-group">
+        <label>Sub-Label *</label>
+        <select id="field-sublabel">
+          <option value="">— Select sub-label —</option>
+          <option>Li-ion</option><option>Li Primary</option><option>Solid-state</option><option>Unknown</option>
+        </select>
       </div>
-
-      <div class="form-card">
-        <div class="field-group">
-          <label>Label *</label>
-          <select id="field-label">
-            <option value="">— Select label —</option>
-            <option>Lithium</option>
-            <option>NiMH</option>
-            <option>NiCd</option>
-            <option>Lead</option>
-            <option>Alkaline</option>
-            <option>Zinc-Carbon</option>
-            <option>Silver</option>
-            <option>Mercury</option>
-            <option>Arsenic</option>
-            <option>Unknown</option>
-            <option>Data Error</option>
+      <div class="conditional-fields" id="lfp-field" style="margin-top:0;margin-bottom:0">
+        <div class="conditional-label">↳ LFP classification</div>
+        <div class="field-group" style="margin-bottom:0">
+          <label>LFP (Lithium Iron Phosphate) *</label>
+          <select id="field-lfp">
+            <option value="">— Select —</option>
+            <option>Yes</option><option>No</option><option>Unknown</option>
           </select>
         </div>
-
-        <div class="conditional-fields" id="lithium-fields">
-          <div class="conditional-label">Lithium sub-classification</div>
-          <div class="field-group">
-            <label>Lithium Sub-Label *</label>
-            <select id="field-sublabel">
-              <option value="">— Select sub-label —</option>
-              <option>Li-ion</option>
-              <option>Li Primary</option>
-              <option>Solid-state</option>
-              <option>Unknown</option>
-            </select>
-          </div>
-          <div class="conditional-fields" id="lfp-field" style="margin-top:0; margin-bottom:0;">
-            <div class="conditional-label">LFP classification</div>
-            <div class="field-group" style="margin-bottom:0">
-              <label>LFP (Lithium Iron Phosphate) *</label>
-              <select id="field-lfp">
-                <option value="">— Select —</option>
-                <option>Yes</option>
-                <option>No</option>
-                <option>Unknown</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-divider"></div>
-
-
-        <div class="form-divider"></div>
-
-
-        <div class="field-group">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-            <label style="margin-bottom:0">Evidence *</label>
-            <select id="template-select" style="background:var(--surface2);border:1px solid var(--border-bright);border-radius:4px;color:var(--text-muted);font-size:11px;padding:3px 8px;font-family:var(--mono);cursor:pointer;max-width:260px;">
-              <option value="">+ Insert template...</option>
-              <optgroup label="── Direct evidence ──">
-                <option value="The presence of visible [chemistry] text in [cam].jpg provides sufficient evidence.">1. Text visible</option>
-                <option value="The presence of visible [chemistry] recycling logo in [cam].jpg provides sufficient evidence.">2. Logo visible</option>
-                <option value="[voltage/mAh] visible in [cam].jpg indicating [chemistry]. Product [confirmed/unconfirmed]. URL added below.">3. Voltage / mAh indicator</option>
-              </optgroup>
-              <optgroup label="── Web search ──">
-                <option value="[brand/part number] visible in [cam].jpg. Web search confirms [chemistry]. URL added below.">4. Web search — chemistry clear</option>
-                <option value="[product] found online. Available in [chemistry 1] and [chemistry 2] variants. Chemistry unconfirmed — marked for review.">5. Web search — chemistry unclear</option>
-              </optgroup>
-              <optgroup label="── Multiple batteries ──">
-                <option value="Multiple batteries in image. All identified to be of [chemistry]; Logo/text visible on [cam].jpg.">6. Multiple batteries — same chemistry</option>
-                <option value="Multiple batteries visible in image with different compositions: [chemistry 1] on [cam].jpg and [chemistry 2] on [cam].jpg. Cannot confirm single label — marked as unknown.">7. Multiple batteries — different chemistry</option>
-              </optgroup>
-              <optgroup label="── Unknown / errors ──">
-                <option value="Unable to confirm battery type. [label obscured / distorted image / no visible markings].">8. Unknown / cannot confirm</option>
-                <option value="Data error — non-battery item in image. Marked as data error.">9. Data error — non-battery item</option>
-                <option value="Data error — product missing in [cam].jpg. Marked as data error.">10. Data error — product missing</option>
-                <option value="Data error — product in [cam] differs from other images in dataset. Marked as data error.">11. Data error — product mismatch</option>
-              </optgroup>
-            </select>
-          </div>
-          <textarea id="field-evidence" placeholder="Describe the evidence supporting your label. Include camera references where applicable (e.g. 'Li-ion text visible on Cam 2, 3')."></textarea>
-          <div id="template-hint" style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-top:4px;display:none;">↳ Replace text in [ ] with specific details</div>
-        </div>
-
-        <div class="field-group">
-          <label>Evidence URL <span style="color:var(--text-dim);font-size:10px;text-transform:none;letter-spacing:0">(optional — one per line)</span></label>
-          <textarea id="field-evidence-url" placeholder="https://example.com/image1&#10;https://example.com/image2" style="min-height:36px;font-family:var(--mono);font-size:12px;"></textarea>
-        </div>
-
-        <div class="field-group">
-          <label>Text / Logo Visible</label>
-          <label class="checkbox-field" for="field-visible">
-            <input type="checkbox" id="field-visible" />
-            <span class="checkbox-label-text">The battery type text or logo is clearly visible in the image</span>
-          </label>
-        </div>
-
-        <div class="field-group">
-          <label>Needs Review</label>
-          <label class="checkbox-field" for="field-needs-review">
-            <input type="checkbox" id="field-needs-review" />
-            <span class="checkbox-label-text">Flag this entry for quality review — check if you are uncertain about your label</span>
-          </label>
-        </div>
-
-        <div class="form-actions">
-          <button class="btn-primary" id="btn-submit">Submit & Next →</button>
-          <button class="btn-secondary" id="btn-submit-stop">Submit &amp; Stop</button>
-          <span class="timer-badge" id="timer-display">00:00</span>
-        </div>
       </div>
     </div>
-
-    <!-- ALL DONE -->
-    <div class="screen" id="screen-done">
-      <div class="done-card">
-        <div class="done-icon">✦</div>
-        <h2>All tasks complete</h2>
-        <p>You've annotated all assigned tasks. There are no more rows in the queue right now. Check back later or contact your project manager.</p>
+    <div class="form-divider"></div>
+    <div class="field-group">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="margin-bottom:0">Evidence *</label>
+        <select id="template-select" style="background:var(--surface2);border:1px solid var(--border-bright);border-radius:4px;color:var(--text-muted);font-size:11px;padding:3px 8px;font-family:var(--mono);cursor:pointer;max-width:260px"></select>
       </div>
+      <textarea id="field-evidence" placeholder="Describe the evidence supporting your label. Include camera references (e.g. 'Li-ion text visible on Cam 2, 3')."></textarea>
+      <div id="template-hint" style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-top:4px;display:none">↳ Replace text in [ ] with specific details</div>
     </div>
-
-    <!-- GOODBYE -->
-    <div class="screen" id="screen-goodbye">
-      <div class="done-card">
-        <div class="done-icon">◎</div>
-        <h2>Session ended</h2>
-        <p>Your last task has been submitted. You've been signed out. Come back anytime to continue annotating.</p>
-        <button class="btn-primary" id="btn-signin-again" style="margin-top:24px;width:100%">Sign back in →</button>
-      </div>
+    <div class="field-group">
+      <label>Evidence URL <span style="color:var(--text-dim);font-size:10px;text-transform:none;letter-spacing:0">(optional)</span></label>
+      <textarea id="field-evidence-url" placeholder="https://…" style="min-height:36px;font-family:var(--mono);font-size:12px"></textarea>
     </div>
-
-    <!-- ADMIN -->
-    <div class="screen" id="screen-admin">
-      <div class="admin-header">
-        <h2>Admin Dashboard</h2>
-        <div style="display:flex;gap:10px">
-          <input type="file" id="input-import" accept=".xlsx,.xls" style="display:none" />
-          <button class="btn-secondary" id="btn-import">↑ Import Excel</button>
-          <button class="btn-secondary" id="btn-refresh">↻ Refresh</button>
-          <button class="btn-secondary" id="btn-manage-admins">⚙ Admins</button>
-          <button class="btn-primary" id="btn-export">↓ Export to Excel</button>
-        </div>
-      </div>
-
-      <!-- Admin Management Panel -->
-      <div id="admin-mgmt-panel" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px;margin-bottom:24px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <span style="font-family:var(--mono);font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);">Manage Admins</span>
-          <button class="btn-ghost" id="btn-close-admin-mgmt" style="padding:3px 10px;font-size:10px;">✕ Close</button>
-        </div>
-        <div id="admin-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;min-height:32px;"></div>
-        <div style="display:flex;gap:8px;">
-          <input type="email" id="input-new-admin" placeholder="new.admin@cloudfactory.com" style="flex:1;font-size:13px;" />
-          <button class="btn-primary" id="btn-add-admin" style="white-space:nowrap;">+ Add Admin</button>
-        </div>
-        <p style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:8px;">Changes take effect immediately. You cannot remove yourself.</p>
-      </div>
-
-      <div class="big-progress" id="admin-overall-progress">
-        <div class="big-progress-top">
-          <span class="big-progress-label">Overall Completion</span>
-          <span class="big-progress-pct" id="admin-pct">0%</span>
-        </div>
-        <div class="big-bar-outer">
-          <div class="big-bar-inner" id="admin-bar" style="width:0%"></div>
-        </div>
-      </div>
-
-      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
-        <div class="stat-card">
-          <div class="stat-label">Total Tasks</div>
-          <div class="stat-value" id="stat-total">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Completed</div>
-          <div class="stat-value" id="stat-completed">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">In Progress</div>
-          <div class="stat-value" id="stat-inprogress">—</div>
-        </div>
-      </div>
-      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-top:0">
-        <div class="stat-card">
-          <div class="stat-label">Needs Review</div>
-          <div class="stat-value" id="stat-review">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">2nd Pass Queue</div>
-          <div class="stat-value" id="stat-second-pass">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Disagreements</div>
-          <div class="stat-value" id="stat-disagree" style="color:var(--warn)">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Agreements</div>
-          <div class="stat-value" id="stat-agree" style="color:var(--accent)">—</div>
-        </div>
-      </div>
-
-      <div class="section-title">Annotator Performance</div>
-      <div class="table-wrap">
-        <table id="annotator-table">
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Completed</th>
-              <th>Avg Time/Task</th>
-              <th>Last Active</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="annotator-tbody">
-            <tr><td colspan="5" style="color:var(--text-dim);text-align:center;padding:24px;">Loading...</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="section-title">Recent Completions</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Battery ID</th>
-              <th>Pass</th>
-              <th>Label</th>
-              <th>Sub-Label</th>
-              <th>LFP</th>
-              <th>Needs Review</th>
-              <th>Consensus</th>
-              <th>Annotator</th>
-              <th>Time Taken</th>
-              <th>Flag</th>
-            </tr>
-          </thead>
-          <tbody id="recent-tbody">
-            <tr><td colspan="10" style="color:var(--text-dim);text-align:center;padding:24px;">Loading...</td></tr>
-          </tbody>
-        </table>
-      </div>
+    <div class="field-group">
+      <label>Text / Logo Visible</label>
+      <label class="checkbox-field" for="field-visible">
+        <input type="checkbox" id="field-visible">
+        <span>The battery type text or logo is clearly visible in the image</span>
+      </label>
     </div>
-  </main>
+    <div class="field-group">
+      <label>Needs Review</label>
+      <label class="checkbox-field" for="field-needs-review">
+        <input type="checkbox" id="field-needs-review">
+        <span>Flag this entry for quality review — check if you are uncertain</span>
+      </label>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" id="btn-submit">Submit &amp; Next →</button>
+      <button class="btn-secondary" id="btn-submit-stop">Submit &amp; Stop</button>
+      <span class="timer-badge" id="timer-display">00:00</span>
+    </div>
+  </div>
 </div>
 
-<!-- LOADING OVERLAY -->
-<div class="loading-overlay" id="loading-overlay">
-  <div class="spinner"></div>
-  <p id="loading-text">Loading...</p>
+<!-- DONE -->
+<div class="screen" id="screen-done">
+  <div class="done-card">
+    <div class="done-icon">✦</div>
+    <h2>All tasks complete</h2>
+    <p>You've annotated all assigned tasks. There are no more rows in the queue right now. Check back later or contact your project manager.</p>
+  </div>
 </div>
 
-<!-- TOAST -->
+<!-- GOODBYE -->
+<div class="screen" id="screen-goodbye">
+  <div class="done-card">
+    <div class="done-icon">◎</div>
+    <h2>Session ended</h2>
+    <p>Your last task has been submitted. Come back anytime to continue annotating.</p>
+    <button class="btn-primary" id="btn-signin-again" style="margin-top:24px;width:100%">Sign back in →</button>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="screen" id="screen-admin">
+  <div class="admin-header">
+    <h2>Admin Dashboard</h2>
+    <div class="admin-btn-row">
+      <button class="btn-secondary" id="btn-refresh">↻ Refresh</button>
+      <button class="btn-primary" id="btn-export">↓ Export to Excel</button>
+    </div>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 20px;margin-bottom:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted)">Overall Completion</span>
+      <span style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--accent)" id="admin-pct">0%</span>
+    </div>
+    <div class="big-bar-outer"><div class="big-bar-inner" id="admin-bar" style="width:0%"></div></div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Total Tasks</div><div class="stat-value" id="stat-total">—</div></div>
+    <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value" id="stat-completed">—</div></div>
+    <div class="stat-card"><div class="stat-label">In Progress</div><div class="stat-value" id="stat-inprogress">—</div></div>
+  </div>
+  <div class="stats-grid-4">
+    <div class="stat-card"><div class="stat-label">Needs Review</div><div class="stat-value" id="stat-review">—</div></div>
+    <div class="stat-card"><div class="stat-label">Unknown</div><div class="stat-value" id="stat-unknown">—</div></div>
+    <div class="stat-card"><div class="stat-label">Data Errors</div><div class="stat-value" id="stat-errors">—</div></div>
+    <div class="stat-card"><div class="stat-label">Unassigned</div><div class="stat-value" id="stat-unassigned">—</div></div>
+  </div>
+
+  <div class="section-title">Annotator Performance</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Email</th><th>Completed</th><th>Total Time</th><th>Avg / Task</th><th>Last Active</th></tr></thead>
+      <tbody id="annotator-tbody"><tr><td colspan="5" style="color:var(--text-dim);text-align:center;padding:24px">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="section-title">Recent Completions (last 50)</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Battery ID</th><th>Label</th><th>Sub-Label</th><th>LFP</th><th>Needs Review</th><th>Annotator</th><th>Time</th></tr></thead>
+      <tbody id="recent-tbody"><tr><td colspan="7" style="color:var(--text-dim);text-align:center;padding:24px">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+<div class="loading-overlay" id="loading-overlay"><div class="spinner"></div><p id="loading-text">Loading…</p></div>
 <div id="toast"></div>
 
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
 <script>
-// ═══════════════════════════════════════════════
-// CONFIG — loaded from remote config sheet after OAuth
-// ═══════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════
-// CF BATTERY CONFIG LOADER  v1.0
-// Reads from a dedicated config-only Google Sheet (private).
-// Called once after OAuth completes. All three apps share this.
-// ═══════════════════════════════════════════════════════════════
-
-// The ONE hardcoded value across all apps — the config sheet ID.
-// This never changes. Everything else comes from the sheet.
+// ── Config ──────────────────────────────────────────────────────
 const CONFIG_SHEET_ID = '1axlYSB3d5H0tDO4M_UA73QmKUY60xkzTrUi2Wfz1cls';
+const CLIENT_ID       = '92798755923-ah1qkitovkkq4qcs53rv6srpu86106lk.apps.googleusercontent.com';
+const SCOPES          = 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
+const SHEETS          = { TASKS: 'tasks', ANNOTATORS: 'annotators' };
 
-// Defaults — used if config sheet is unreachable or key is missing
 const CONFIG_DEFAULTS = {
-  admin_emails:                  'ayush.siddhi@cloudfactory.com, robina@cloudfactory.com',
-  reviewer_emails:               '',
-  labeling_sheet_id:             '1iQ7-zWXr39rz06i78cijr61WFBBeoYAJ2ppCBr6qa2U',
-  assessment_sheet_id:           '1o1Xd0KOIwmHSwf9KhF6UR8DzQV6mj7fEuUQjpUb1NWE',
-  consensus_sheet_id:            '1iQ7-zWXr39rz06i78cijr61WFBBeoYAJ2ppCBr6qa2U',
-  assessment_version:            'v1',
-  assessment_gold_tab:           'ground_truth_v1',
-  assessment_passing_score:      '70',
-  consensus_confidence:          '0.95',
-  consensus_margin_error:        '0.035',
-  consensus_accuracy_target:     '0.95',
-  consensus_flag_threshold:      '2',
-  consensus_deepdive_threshold:  '3',
-  consensus_deepdive_error_rate: '0.25',
+  admin_emails:     'ayush.siddhi@cloudfactory.com, robina@cloudfactory.com',
+  labeling_sheet_id:'1iQ7-zWXr39rz06i78cijr61WFBBeoYAJ2ppCBr6qa2U',
 };
 
-async function loadRemoteConfig(accessToken) {
+let APP_CONFIG = null;
+const CONFIG = {
+  get SHEET_ID()     { return APP_CONFIG ? APP_CONFIG.labelingSheetId    : CONFIG_DEFAULTS.labeling_sheet_id; },
+  get ADMIN_EMAILS() { return APP_CONFIG ? APP_CONFIG.adminEmails         : CONFIG_DEFAULTS.admin_emails.split(',').map(e=>e.trim()); },
+};
+
+let state = {
+  user: null, accessToken: null, isAdmin: false,
+  currentTask: null, timerStart: null, timerInterval: null,
+};
+
+// ── Config loader ────────────────────────────────────────────────
+async function loadConfig(accessToken) {
   try {
-    // Use API key-free public read — works if sheet is shared as "Anyone with link can view"
-    // Falls back to authenticated read if that fails
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG_SHEET_ID}/values/config!A:B?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY`;
-    let res = await fetch(url);
-    if (!res.ok) {
-      // Fall back to authenticated read
-      res = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG_SHEET_ID}/values/config!A:B`,
-        { headers: { Authorization: 'Bearer ' + accessToken } }
-      );
-    }
+    let res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG_SHEET_ID}/values/config!A:B?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY`);
+    if (!res.ok) res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG_SHEET_ID}/values/config!A:B`, { headers: { Authorization: 'Bearer ' + accessToken } });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    const rows = (data.values || []).slice(1);
-    const cfg = { ...CONFIG_DEFAULTS };
-    rows.forEach(r => { if (r[0] && r[1] !== undefined) cfg[r[0].trim()] = r[1].trim(); });
-    return cfg;
-  } catch(e) {
-    console.warn('Config sheet unreachable — using defaults:', e.message);
-    return { ...CONFIG_DEFAULTS };
-  }
-}
-
-async function loadConfig(accessToken) {
-  const raw = await loadRemoteConfig(accessToken);
-  APP_CONFIG = parseConfig(raw);
-}
-
-function parseConfig(raw) {
-  return {
-    // Auth
-    adminEmails:    raw.admin_emails.split(',').map(e => e.trim()).filter(Boolean),
-  reviewerEmails: (raw.reviewer_emails||'').split(',').map(e => e.trim()).filter(Boolean),
-
-    // Sheet IDs per app
-    labelingSheetId:    raw.labeling_sheet_id,
-    assessmentSheetId:  raw.assessment_sheet_id,
-    consensusSheetId:   raw.consensus_sheet_id,
-
-    // Assessment
-    assessmentVersion:      raw.assessment_version,
-    assessmentGoldTab:      raw.assessment_gold_tab,
-    assessmentPassingScore: parseInt(raw.assessment_passing_score) || 70,
-
-    // Consensus
-    consensusSampleSize:        parseInt(raw.consensus_sample_size) || 774,
-    consensusFlagThreshold:     parseInt(raw.consensus_flag_threshold) || 2,
-    consensusDeepDiveThreshold: parseInt(raw.consensus_deepdive_threshold) || 3,
-    consensusDeepDiveErrorRate: parseFloat(raw.consensus_deepdive_error_rate) || 0.25,
-  };
-}
-
-const CLIENT_ID = '92798755923-ah1qkitovkkq4qcs53rv6srpu86106lk.apps.googleusercontent.com';
-const SCOPES    = 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
-let APP_CONFIG  = null;
-
-// CONFIG proxy — backward-compatible with all existing code
-let CONFIG = {
-  CLIENT_ID,
-  get SHEET_ID()      { return APP_CONFIG ? APP_CONFIG.labelingSheetId : '1iQ7-zWXr39rz06i78cijr61WFBBeoYAJ2ppCBr6qa2U'; },
-  get ADMIN_EMAILS()  { return APP_CONFIG ? APP_CONFIG.adminEmails : ['ayush.siddhi@cloudfactory.com']; },
-  set ADMIN_EMAILS(v) { if (APP_CONFIG) APP_CONFIG.adminEmails = v; },
-  SCOPES,
-};
-
-// Sheet tab names
-const SHEETS = { TASKS: 'tasks', ANNOTATORS: 'annotators' };
-// Column layout (1-indexed): A=battery_id B=label C=sublabel D=lfp E=evidence
-// F=evidence_url G=text_logo_visible H=needs_review I=assigned_to J=status
-// K=assigned_at L=submitted_at M=time_taken_seconds N=source_sheet
-// O=pass P=source_row Q=consensus_status
-const COL = { PASS: 15, SOURCE_ROW: 16, CONSENSUS: 17 }; // 1-indexed
-
-// ═══════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════
-let state = {
-  user: null,           // { email, name }
-  currentTask: null,    // { rowIndex, batteryId }
-  taskStartTime: null,
-  timerInterval: null,
-  isAdmin: false,
-  accessToken: null
-};
-
-// ═══════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + id).classList.add('active');
-}
-
-function showToast(msg, type = 'success') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'show ' + type;
-  clearTimeout(t._t);
-  t._t = setTimeout(() => t.className = '', 3000);
-}
-
-function setLoading(show, text = 'Loading...') {
-  const el = document.getElementById('loading-overlay');
-  document.getElementById('loading-text').textContent = text;
-  el.classList.toggle('active', show);
-}
-
-function formatSeconds(s) {
-  if (!s || s < 0) return '—';
-  const m = Math.floor(s / 60), sec = s % 60;
-  return `${String(m).padStart(2,'0')}:${String(Math.floor(sec)).padStart(2,'0')}`;
-}
-
-async function loadConfig(accessToken) {
-  const raw = await loadRemoteConfig(accessToken);
-  APP_CONFIG = parseConfig(raw);
-}
-
-function saveConfig() {
-  // Admin list changes are now written back to the config sheet
-  // This is a no-op kept for backward compatibility
-}
-
-// ═══════════════════════════════════════════════
-// GOOGLE SHEETS API
-// ═══════════════════════════════════════════════
-async function refreshToken() {
-  return new Promise((resolve, reject) => {
-    window._tokenClient.requestAccessToken({ prompt: '' });
-    // Override callback temporarily to capture new token
-    const originalCallback = window._tokenClient.callback;
-    window._tokenClient.callback = async (resp) => {
-      window._tokenClient.callback = originalCallback;
-      if (resp.error) { reject(new Error(resp.error)); return; }
-      state.accessToken = resp.access_token;
-      resolve(resp.access_token);
+    const cfg  = { ...CONFIG_DEFAULTS };
+    (data.values || []).slice(1).forEach(r => { if (r[0] && r[1] !== undefined) cfg[r[0].trim()] = r[1].trim(); });
+    APP_CONFIG = {
+      labelingSheetId: cfg.labeling_sheet_id,
+      adminEmails:     cfg.admin_emails.split(',').map(e => e.trim()).filter(Boolean),
     };
-  });
+  } catch(e) { console.warn('Config load failed, using defaults:', e.message); }
 }
 
+// ── Sheets API ───────────────────────────────────────────────────
 async function sheetsRequest(fn) {
   const result = await fn();
-  // Check if response itself is a 401 error object from Google
   if (result && result.error && result.error.code === 401) {
-    showToast('Session refreshing...', 'success');
-    await refreshToken();
-    return await fn();
+    await refreshToken(); return await fn();
   }
   return result;
 }
 
 async function sheetsGet(range) {
   return sheetsRequest(async () => {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}`;
-    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + state.accessToken } });
-    const data = await res.json();
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}`, { headers: { Authorization: 'Bearer ' + state.accessToken } });
+    const d = await res.json();
     if (!res.ok && res.status !== 401) throw new Error('Sheets GET failed: ' + res.status);
-    return data;
-  });
-}
-
-async function sheetsAppend(range, values) {
-  return sheetsRequest(async () => {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ values })
-    });
-    const data = await res.json();
-    if (!res.ok && res.status !== 401) throw new Error('Sheets APPEND failed: ' + res.status);
-    return data;
+    return d;
   });
 }
 
 async function sheetsUpdate(range, values) {
   return sheetsRequest(async () => {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
-    const res = await fetch(url, {
-      method: 'PUT',
-      headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, {
+      method: 'PUT', headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values })
     });
-    const data = await res.json();
+    const d = await res.json();
     if (!res.ok && res.status !== 401) throw new Error('Sheets UPDATE failed: ' + res.status);
-    return data;
+    return d;
   });
 }
 
-async function sheetsBatchUpdate(requests) {
+async function sheetsAppend(range, values) {
   return sheetsRequest(async () => {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}:batchUpdate`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requests })
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, {
+      method: 'POST', headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values })
     });
-    const data = await res.json();
-    if (!res.ok && res.status !== 401) throw new Error('Sheets BATCH UPDATE failed: ' + res.status);
-    return data;
+    const d = await res.json();
+    if (!res.ok && res.status !== 401) throw new Error('Sheets APPEND failed: ' + res.status);
+    return d;
   });
 }
 
-// Ensure sheets exist
-async function ensureSheets() {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}`;
-  const res = await fetch(url, { headers: { Authorization: 'Bearer ' + state.accessToken } });
-  const data = await res.json();
-  if (!data.sheets) {
-    console.error('ensureSheets error:', data);
-    throw new Error('Could not access Google Sheet. Make sure the sheet is shared or accessible to this account.');
-  }
-  const existingNames = data.sheets.map(s => s.properties.title);
-
-  const toCreate = [];
-  if (!existingNames.includes(SHEETS.TASKS)) toCreate.push({ addSheet: { properties: { title: SHEETS.TASKS } } });
-  if (!existingNames.includes(SHEETS.ANNOTATORS)) toCreate.push({ addSheet: { properties: { title: SHEETS.ANNOTATORS } } });
-
-  if (toCreate.length) {
-    await sheetsBatchUpdate(toCreate);
-    // Add headers
-    if (!existingNames.includes(SHEETS.TASKS)) {
-      await sheetsUpdate(`${SHEETS.TASKS}!A1`, [[
-        'battery_id', 'label', 'sublabel', 'lfp', 'evidence', 'evidence_url', 'text_logo_visible', 'needs_review',
-        'assigned_to', 'status', 'assigned_at', 'submitted_at', 'time_taken_seconds', 'source_sheet',
-        'pass', 'source_row', 'consensus_status'
-      ]]);
-    }
-    if (!existingNames.includes(SHEETS.ANNOTATORS)) {
-      await sheetsUpdate(`${SHEETS.ANNOTATORS}!A1`, [['email', 'completed', 'total_time_seconds', 'last_active']]);
-    }
-  }
+async function refreshToken() {
+  return new Promise((resolve, reject) => {
+    const orig = window._tc.callback;
+    window._tc.callback = async (r) => {
+      window._tc.callback = orig;
+      if (r.error) { reject(new Error(r.error)); return; }
+      state.accessToken = r.access_token;
+      resolve(r.access_token);
+    };
+    window._tc.requestAccessToken({ prompt: '' });
+  });
 }
 
-// ═══════════════════════════════════════════════
-// TASK ASSIGNMENT
-// ═══════════════════════════════════════════════
+// ── Task assignment ──────────────────────────────────────────────
 async function getOrAssignTask(email) {
-  const data = await sheetsGet(`${SHEETS.TASKS}!A:Q`);
+  const data = await sheetsGet(`${SHEETS.TASKS}!A:N`);
   const rows = data.values || [];
   if (rows.length < 2) return null;
 
-  // Build set of battery IDs this annotator already did on pass-1
-  // so we never assign them the same battery on pass-2
-  const myPass1Batteries = new Set();
+  // Resume in-progress
   for (let i = 1; i < rows.length; i++) {
-    const r = rows[i];
-    const pass = r[14] || '1';
-    if (r[8] === email && pass === '1') myPass1Batteries.add(r[0]);
+    if (rows[i][8] === email && rows[i][9] === 'in-progress')
+      return { rowIndex: i + 1, batteryId: rows[i][0] };
   }
-
-  // Resume any in-progress task already assigned to this annotator
+  // Assign next unassigned
   for (let i = 1; i < rows.length; i++) {
-    const r = rows[i];
-    if (r[8] === email && r[9] === 'in-progress') {
-      return { rowIndex: i + 1, batteryId: r[0], pass: r[14] || '1' };
-    }
-  }
-
-  // Find next unassigned row (skip pass-2 rows where annotator did pass-1)
-  for (let i = 1; i < rows.length; i++) {
-    const r = rows[i];
-    if (!r[9] || r[9] === 'unassigned') {
-      const pass = r[14] || '1';
-      // Blind: if this is pass-2, don't assign to the same person who did pass-1
-      if (pass === '2' && myPass1Batteries.has(r[0])) continue;
+    if (!rows[i][9] || rows[i][9] === 'unassigned') {
       const rowNum = i + 1;
-      await sheetsUpdate(`${SHEETS.TASKS}!I${rowNum}:K${rowNum}`, [[
-        email, 'in-progress', new Date().toISOString()
-      ]]);
-      return { rowIndex: rowNum, batteryId: r[0], pass };
+      await sheetsUpdate(`${SHEETS.TASKS}!I${rowNum}:K${rowNum}`, [[email, 'in-progress', new Date().toISOString()]]);
+      return { rowIndex: rowNum, batteryId: rows[i][0] };
     }
   }
   return null;
 }
 
+// ── Submit ───────────────────────────────────────────────────────
 async function submitTask(rowIndex, fields, timeTaken) {
   const urlVal = (() => {
     if (!fields.evidence_url) return '';
     const urls = fields.evidence_url.split('\n').map(u => u.trim()).filter(Boolean);
-    if (urls.length === 1) return '=HYPERLINK("' + urls[0] + '","' + urls[0] + '")';
-    return urls.join('\n');
+    return urls.length === 1 ? `=HYPERLINK("${urls[0]}","${urls[0]}")` : urls.join('\n');
   })();
 
   await sheetsUpdate(`${SHEETS.TASKS}!B${rowIndex}:M${rowIndex}`, [[
-    fields.label,
-    fields.sublabel || '',
-    fields.lfp || '',
-    fields.evidence,
-    urlVal,
+    fields.label, fields.sublabel || '', fields.lfp || '',
+    fields.evidence, urlVal,
     fields.text_logo_visible ? 'Yes' : '',
     fields.needs_review ? 'Yes' : '',
-    state.user.email,
-    'complete',
-    '',
-    new Date().toISOString(),
-    timeTaken
+    state.user.email, 'complete', '',
+    new Date().toISOString(), timeTaken
   ]]);
 
-  // ── Consensus check: if this is pass-2, compare against pass-1 ──
-  const pass = state.currentTask.pass || '1';
-  if (pass === '2') {
-    await runConsensusCheck(rowIndex, fields);
-  } else {
-    // pass-1: check if this task qualifies for second pass, and create the row
-    const needsSecondPass =
-      fields.needs_review ||
-      fields.label === 'Unknown' ||
-      fields.label === 'Data Error';
-    if (needsSecondPass) {
-      await createSecondPassRow(rowIndex, fields);
-    }
-  }
-
-  await updateAnnotatorRecord(state.user.email, timeTaken);
-}
-
-async function createSecondPassRow(pass1RowIndex, fields) {
-  // Read the full pass-1 row to get battery_id and source_sheet
-  const data = await sheetsGet(`${SHEETS.TASKS}!A${pass1RowIndex}:Q${pass1RowIndex}`);
-  const row = (data.values || [[]])[0];
-  const batteryId = row[0];
-  const sourceSheet = row[13] || '';
-
-  // Check a pass-2 row doesn't already exist for this battery
-  const allData = await sheetsGet(`${SHEETS.TASKS}!A:Q`);
-  const allRows = (allData.values || []).slice(1);
-  const alreadyQueued = allRows.some(r => r[0] === batteryId && (r[14] || '1') === '2');
-  if (alreadyQueued) return;
-
-  // Append a blank second-pass row
-  await sheetsAppend(`${SHEETS.TASKS}!A:Q`, [[
-    batteryId, '', '', '', '', '', '', '', '', 'unassigned', '', '', '', sourceSheet,
-    '2',               // pass
-    pass1RowIndex,     // source_row — points back to pass-1
-    ''                 // consensus_status — filled after pass-2 submit
-  ]]);
-}
-
-async function runConsensusCheck(pass2RowIndex, pass2Fields) {
-  // Read this pass-2 row to get source_row
-  const data = await sheetsGet(`${SHEETS.TASKS}!A${pass2RowIndex}:Q${pass2RowIndex}`);
-  const row = (data.values || [[]])[0];
-  const pass1RowIndex = parseInt(row[15]);
-  if (!pass1RowIndex) return;
-
-  // Read pass-1 row
-  const p1Data = await sheetsGet(`${SHEETS.TASKS}!B${pass1RowIndex}:D${pass1RowIndex}`);
-  const p1 = (p1Data.values || [[]])[0];
-  const p1Label    = (p1[0] || '').toLowerCase().trim();
-  const p1Sublabel = (p1[1] || '').toLowerCase().trim();
-  const p1Lfp      = (p1[2] || '').toLowerCase().trim();
-
-  const p2Label    = (pass2Fields.label    || '').toLowerCase().trim();
-  const p2Sublabel = (pass2Fields.sublabel || '').toLowerCase().trim();
-  const p2Lfp      = (pass2Fields.lfp      || '').toLowerCase().trim();
-
-  const agree = p1Label === p2Label && p1Sublabel === p2Sublabel && p1Lfp === p2Lfp;
-  const consensus = agree ? 'agree' : 'disagree';
-
-  // Write consensus_status to both rows col Q
-  await sheetsUpdate(`${SHEETS.TASKS}!Q${pass1RowIndex}`, [[consensus]]);
-  await sheetsUpdate(`${SHEETS.TASKS}!Q${pass2RowIndex}`, [[consensus]]);
-}
-
-async function registerAnnotatorIfNew(email) {
-  try {
-    const data = await sheetsGet(`${SHEETS.ANNOTATORS}!A:A`);
-    const emails = (data.values || []).slice(1).map(r => r[0]);
-    if (!emails.includes(email)) {
-      await sheetsAppend(`${SHEETS.ANNOTATORS}!A:D`, [[email, 0, 0, new Date().toISOString()]]);
-    }
-  } catch(e) { console.error('registerAnnotatorIfNew error:', e); }
+  // Update annotator record (fire-and-forget)
+  updateAnnotatorRecord(state.user.email, timeTaken).catch(e => console.warn('Ann record:', e));
 }
 
 async function updateAnnotatorRecord(email, timeTaken) {
-  // Recount from tasks sheet directly — eliminates double-count from duplicate fires
-  try {
-    const [annData, taskData] = await Promise.all([
-      sheetsGet(`${SHEETS.ANNOTATORS}!A:D`),
-      sheetsGet(`${SHEETS.TASKS}!A:M`)
-    ]);
-    const annRows = annData.values || [];
-    const taskRows = taskData.values || [];
+  // Recount from tasks sheet — prevents double-count from any retry
+  const [annData, taskData] = await Promise.all([
+    sheetsGet(`${SHEETS.ANNOTATORS}!A:D`),
+    sheetsGet(`${SHEETS.TASKS}!A:N`)
+  ]);
+  const annRows  = annData.values  || [];
+  const taskRows = taskData.values || [];
+  const myTasks  = taskRows.slice(1).filter(r => r[8] === email && r[9] === 'complete');
+  const total    = myTasks.length;
+  const totalSec = myTasks.reduce((s, r) => s + (parseInt(r[12]) || 0), 0);
+  const now      = new Date().toISOString();
 
-    // Ground truth: count completed rows for this annotator in tasks sheet
-    const myTasks = taskRows.slice(1).filter(r => r[8] === email && r[9] === 'complete');
-    const trueCompleted = myTasks.length;
-    const trueTime = myTasks.reduce((sum, r) => sum + (parseInt(r[12]) || 0), 0);
-
-    const now = new Date().toISOString();
-    let found = -1;
-    for (let i = 1; i < annRows.length; i++) {
-      if (annRows[i][0] === email) { found = i + 1; break; }
-    }
-    if (found === -1) {
-      await sheetsAppend(`${SHEETS.ANNOTATORS}!A:D`, [[email, trueCompleted, trueTime, now]]);
-    } else {
-      await sheetsUpdate(`${SHEETS.ANNOTATORS}!A${found}:D${found}`, [[email, trueCompleted, trueTime, now]]);
-    }
-  } catch(e) {
-    console.warn('Annotator record update failed:', e);
+  let rowIdx = -1;
+  for (let i = 1; i < annRows.length; i++) {
+    if (annRows[i][0] === email) { rowIdx = i + 1; break; }
+  }
+  if (rowIdx === -1) {
+    await sheetsAppend(`${SHEETS.ANNOTATORS}!A:D`, [[email, total, totalSec, now]]);
+  } else {
+    await sheetsUpdate(`${SHEETS.ANNOTATORS}!A${rowIdx}:D${rowIdx}`, [[email, total, totalSec, now]]);
   }
 }
 
-// ═══════════════════════════════════════════════
-// TIMER
-// ═══════════════════════════════════════════════
+// ── Timer ────────────────────────────────────────────────────────
+function fmtTime(s) {
+  if (!s || isNaN(s)) return '—';
+  const m = Math.floor(s / 60);
+  return `${String(m).padStart(2,'0')}:${String(Math.floor(s % 60)).padStart(2,'0')}`;
+}
+
 function startTimer() {
-  state.taskStartTime = Date.now();
+  state.timerStart = Date.now();
   clearInterval(state.timerInterval);
   state.timerInterval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - state.taskStartTime) / 1000);
-    document.getElementById('timer-display').textContent = formatSeconds(elapsed);
+    document.getElementById('timer-display').textContent = fmtTime(Math.floor((Date.now() - state.timerStart) / 1000));
   }, 1000);
 }
 
 function stopTimer() {
   clearInterval(state.timerInterval);
-  return state.taskStartTime ? Math.floor((Date.now() - state.taskStartTime) / 1000) : 0;
+  return Math.floor((Date.now() - state.timerStart) / 1000);
 }
 
-// ═══════════════════════════════════════════════
-// ANNOTATION FLOW
-// ═══════════════════════════════════════════════
+// ── Task UI ──────────────────────────────────────────────────────
+function resetForm() {
+  ['field-label','field-sublabel','field-lfp'].forEach(id => document.getElementById(id).value = '');
+  ['field-evidence','field-evidence-url'].forEach(id => document.getElementById(id).value = '');
+  ['field-visible','field-needs-review'].forEach(id => document.getElementById(id).checked = false);
+  document.getElementById('lithium-fields').classList.remove('visible');
+  document.getElementById('lfp-field').classList.remove('visible');
+  document.getElementById('template-hint').style.display = 'none';
+}
+
 async function loadNextTask() {
-  setLoading(true, 'Fetching next task...');
+  setLoading(true, 'Finding next task…');
   try {
     const task = await getOrAssignTask(state.user.email);
-    if (!task) {
-      setLoading(false);
-      showScreen('done');
-      return;
-    }
+    if (!task) { showScreen('done'); setLoading(false); return; }
     state.currentTask = task;
+    resetForm();
     document.getElementById('display-battery-id').textContent = task.batteryId;
-    // Subtle pass indicator (pass-2 annotator sees nothing special — blind)
-
-    // Reset form
-    document.getElementById('field-label').value = '';
-    document.getElementById('field-sublabel').value = '';
-    document.getElementById('field-lfp').value = '';
-    document.getElementById('field-evidence').value = '';
-    document.getElementById('field-evidence-url').value = '';
-    document.getElementById('field-visible').checked = false;
-    document.getElementById('field-needs-review').checked = false;
-    document.getElementById('lithium-fields').classList.remove('visible');
-    document.getElementById('lfp-field').classList.remove('visible');
-
-    // Update user progress
     await updateUserProgress();
-
     startTimer();
-    showScreen('annotate');
   } catch(e) {
     showToast('Error loading task: ' + e.message, 'error');
-    console.error(e);
   }
   setLoading(false);
 }
 
 async function updateUserProgress() {
   try {
-    const data = await sheetsGet(`${SHEETS.TASKS}!I:J`);
+    const data = await sheetsGet(`${SHEETS.ANNOTATORS}!A:B`);
     const rows = (data.values || []).slice(1);
-    const mine = rows.filter(r => r[0] === state.user.email);
-    const done = mine.filter(r => r[1] === 'complete').length;
-    const total = mine.length;
-    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    const myRow = rows.find(r => r[0] === state.user.email);
+    const completed = myRow ? parseInt(myRow[1]) || 0 : 0;
+    const total = await (async () => {
+      const d = await sheetsGet(`${SHEETS.TASKS}!A:A`);
+      return Math.max((d.values || []).length - 1, 0);
+    })();
+    const pct = total ? Math.round(completed / total * 100) : 0;
     document.getElementById('user-progress-bar').style.width = pct + '%';
-    document.getElementById('user-progress-count').textContent = `${done} completed`;
-  } catch(e) {}
+    document.getElementById('user-progress-count').textContent = `${completed} completed`;
+  } catch(e) { /* non-critical */ }
 }
 
+// ── Submit handlers ───────────────────────────────────────────────
 let _submitting = false;
 
-async function handleSubmit() {
+async function handleSubmit(stopAfter = false) {
   if (_submitting) return;
-  const label = document.getElementById('field-label').value;
+  const label    = document.getElementById('field-label').value;
   const evidence = document.getElementById('field-evidence').value.trim();
-
-  if (!label) { showToast('Please select a label', 'error'); return; }
-  if (!evidence) { showToast('Evidence text is required before submitting', 'error'); document.getElementById('field-evidence').focus(); return; }
-
+  if (!label)    { showToast('Please select a label', 'error'); return; }
+  if (!evidence) { showToast('Evidence text is required', 'error'); document.getElementById('field-evidence').focus(); return; }
   if (label === 'Lithium') {
-    const sublabel = document.getElementById('field-sublabel').value;
-    if (!sublabel) { showToast('Please select a Lithium sub-label', 'error'); return; }
-    if ((sublabel === 'Li-ion' || sublabel === 'Solid-state') && !document.getElementById('field-lfp').value) {
+    const sub = document.getElementById('field-sublabel').value;
+    if (!sub) { showToast('Please select a Lithium sub-label', 'error'); return; }
+    if ((sub === 'Li-ion' || sub === 'Solid-state') && !document.getElementById('field-lfp').value) {
       showToast('Please select an LFP value', 'error'); return;
     }
   }
-
   _submitting = true;
+  const btn = document.getElementById(stopAfter ? 'btn-submit-stop' : 'btn-submit');
+  btn.disabled = true; btn.textContent = 'Saving…';
   const timeTaken = stopTimer();
-  setLoading(true, 'Saving annotation...');
-
+  setLoading(true, 'Saving annotation…');
   try {
     await submitTask(state.currentTask.rowIndex, {
       label,
-      sublabel: document.getElementById('field-sublabel').value,
-      lfp: document.getElementById('field-lfp').value,
+      sublabel:          document.getElementById('field-sublabel').value,
+      lfp:               document.getElementById('field-lfp').value,
       evidence,
-      evidence_url: document.getElementById('field-evidence-url').value.trim(),
+      evidence_url:      document.getElementById('field-evidence-url').value.trim(),
       text_logo_visible: document.getElementById('field-visible').checked,
-      needs_review: document.getElementById('field-needs-review').checked
+      needs_review:      document.getElementById('field-needs-review').checked,
     }, timeTaken);
-
-    showToast('Saved! Loading next task...');
-    await loadNextTask();
+    if (stopAfter) { showScreen('goodbye'); }
+    else { showToast('Saved! Loading next task…'); await loadNextTask(); }
   } catch(e) {
     showToast('Error saving: ' + e.message, 'error');
     console.error(e);
   }
+  btn.disabled = false;
+  btn.textContent = stopAfter ? 'Submit & Stop' : 'Submit & Next →';
   _submitting = false;
   setLoading(false);
 }
 
-// Submit & Stop — submit current task then sign out
-async function handleSubmitAndStop() {
-  const label = document.getElementById('field-label').value;
-  const evidence = document.getElementById('field-evidence').value.trim();
-
-  if (!label) { showToast('Please select a label before stopping', 'error'); return; }
-  if (!evidence) { showToast('Evidence text is required before submitting', 'error'); document.getElementById('field-evidence').focus(); return; }
-
-  if (label === 'Lithium') {
-    const sublabel = document.getElementById('field-sublabel').value;
-    if (!sublabel) { showToast('Please select a Lithium sub-label', 'error'); return; }
-    if ((sublabel === 'Li-ion' || sublabel === 'Solid-state') && !document.getElementById('field-lfp').value) {
-      showToast('Please select an LFP value', 'error'); return;
-    }
-  }
-
-  const timeTaken = stopTimer();
-  setLoading(true, 'Submitting and signing out...');
-  try {
-    await submitTask(state.currentTask.rowIndex, {
-      label,
-      sublabel: document.getElementById('field-sublabel').value,
-      lfp: document.getElementById('field-lfp').value,
-      evidence,
-      evidence_url: document.getElementById('field-evidence-url').value.trim(),
-      text_logo_visible: document.getElementById('field-visible').checked,
-      needs_review: document.getElementById('field-needs-review').checked
-    }, timeTaken);
-
-    // Clear session
-    state.user = null;
-    state.accessToken = null;
-    state.currentTask = null;
-    document.getElementById('header-email').style.display = 'none';
-    document.getElementById('btn-logout').style.display = 'none';
-    document.getElementById('btn-admin-toggle').style.display = 'none';
-
-    showScreen('goodbye');
-  } catch(e) {
-    showToast('Error: ' + e.message, 'error');
-    console.error(e);
-  }
-  setLoading(false);
-}
-
-// ═══════════════════════════════════════════════
-// ADMIN
-// ═══════════════════════════════════════════════
+// ── Admin dashboard ───────────────────────────────────────────────
 async function loadAdminDashboard() {
-  setLoading(true, 'Loading dashboard...');
+  setLoading(true, 'Loading dashboard…');
   try {
-    const [tasksData, annotatorsData] = await Promise.all([
+    const [tData, aData] = await Promise.all([
       sheetsGet(`${SHEETS.TASKS}!A:N`),
       sheetsGet(`${SHEETS.ANNOTATORS}!A:D`)
     ]);
+    const tasks = (tData.values || []).slice(1).filter(r => r[0]);
+    const anns  = (aData.values || []).slice(1).filter(r => r[0]);
 
-    const tasks = (tasksData.values || []).slice(1);
-    const annotators = (annotatorsData.values || []).slice(1);
+    const total      = tasks.length;
+    const completed  = tasks.filter(r => r[9] === 'complete').length;
+    const inProgress = tasks.filter(r => r[9] === 'in-progress').length;
+    const review     = tasks.filter(r => r[7] === 'Yes' && r[9] === 'complete').length;
+    const unknown    = tasks.filter(r => r[1] === 'Unknown' && r[9] === 'complete').length;
+    const errors     = tasks.filter(r => r[1] === 'Data Error' && r[9] === 'complete').length;
+    const unassigned = tasks.filter(r => !r[9] || r[9] === 'unassigned').length;
+    const pct        = total ? Math.round(completed / total * 100) : 0;
 
-    // Only count pass-1 rows for overall totals (pass-2 are internal)
-    const pass1Tasks = tasks.filter(r => !r[14] || r[14] === '1');
-    const pass2Tasks = tasks.filter(r => r[14] === '2');
-
-    const total = pass1Tasks.length;
-    const completed = pass1Tasks.filter(r => r[9] === 'complete').length;
-    const inprogress = tasks.filter(r => r[9] === 'in-progress').length;
-    const needsReview = pass1Tasks.filter(r => r[7] === 'Yes').length;
-    const secondPassPending = pass2Tasks.filter(r => !r[9] || r[9] === 'unassigned' || r[9] === 'in-progress').length;
-    const disagree = tasks.filter(r => r[16] === 'disagree').length / 2; // each pair has 2 rows
-    const agree    = tasks.filter(r => r[16] === 'agree').length / 2;
-    const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-    document.getElementById('stat-total').textContent = total.toLocaleString();
-    document.getElementById('stat-completed').textContent = completed.toLocaleString();
-    document.getElementById('stat-inprogress').textContent = inprogress.toLocaleString();
-    document.getElementById('stat-review').textContent = needsReview.toLocaleString();
-    document.getElementById('stat-second-pass').textContent = secondPassPending.toLocaleString();
-    document.getElementById('stat-disagree').textContent = Math.round(disagree).toLocaleString();
-    document.getElementById('stat-agree').textContent = Math.round(agree).toLocaleString();
-    document.getElementById('admin-pct').textContent = pct + '%';
-    document.getElementById('admin-bar').style.width = pct + '%';
+    document.getElementById('admin-pct').textContent   = pct + '%';
+    document.getElementById('admin-bar').style.width   = pct + '%';
+    document.getElementById('stat-total').textContent      = total.toLocaleString();
+    document.getElementById('stat-completed').textContent  = completed.toLocaleString();
+    document.getElementById('stat-inprogress').textContent = inProgress.toLocaleString();
+    document.getElementById('stat-review').textContent     = review.toLocaleString();
+    document.getElementById('stat-unknown').textContent    = unknown.toLocaleString();
+    document.getElementById('stat-errors').textContent     = errors.toLocaleString();
+    document.getElementById('stat-unassigned').textContent = unassigned.toLocaleString();
 
     // Annotator table
-    const tbody = document.getElementById('annotator-tbody');
-    if (annotators.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim);text-align:center;padding:24px;">No annotators yet</td></tr>';
-    } else {
-      tbody.innerHTML = annotators.map(r => {
-        const completed = parseInt(r[1]) || 0;
-        const totalTime = parseInt(r[2]) || 0;
-        const avgTime = completed > 0 ? Math.round(totalTime / completed) : 0;
-        const lastActive = r[3] ? new Date(r[3]).toLocaleString() : '—';
-        const now = Date.now();
-        const lastTs = r[3] ? new Date(r[3]).getTime() : 0;
-        const isActive = (now - lastTs) < 15 * 60 * 1000; // active in last 15 min
-        return `<tr>
-          <td style="font-family:var(--mono);font-size:12px">${r[0]}</td>
-          <td><strong>${completed}</strong></td>
-          <td>${formatSeconds(avgTime)}</td>
-          <td style="font-size:12px;color:var(--text-muted)">${lastActive}</td>
-          <td><span class="badge ${isActive ? 'badge-green' : 'badge-gray'}">${isActive ? 'active' : 'idle'}</span></td>
-        </tr>`;
-      }).join('');
-    }
+    document.getElementById('annotator-tbody').innerHTML = anns.length
+      ? anns.sort((a,b) => (parseInt(b[1])||0) - (parseInt(a[1])||0)).map(r => {
+          const totalSec = parseInt(r[2]) || 0;
+          const done     = parseInt(r[1]) || 0;
+          const avg      = done ? Math.round(totalSec / done) : 0;
+          const last     = r[3] ? new Date(r[3]).toLocaleString() : '—';
+          return `<tr>
+            <td style="font-family:var(--mono);font-size:12px">${r[0].split('@')[0]}</td>
+            <td>${done.toLocaleString()}</td>
+            <td style="font-family:var(--mono);font-size:12px">${fmtTime(totalSec)}</td>
+            <td style="font-family:var(--mono);font-size:12px">${fmtTime(avg)}</td>
+            <td style="font-size:11px;color:var(--text-muted)">${last}</td>
+          </tr>`;
+        }).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:24px">No annotators yet</td></tr>';
 
-    // Recent completions — show all completed, most recent first
+    // Recent completions (last 50)
     const recent = tasks.filter(r => r[9] === 'complete').slice(-50).reverse();
-    const rtbody = document.getElementById('recent-tbody');
-    if (recent.length === 0) {
-      rtbody.innerHTML = '<tr><td colspan="10" style="color:var(--text-dim);text-align:center;padding:24px;">No completions yet</td></tr>';
-    } else {
-      rtbody.innerHTML = recent.map((r, idx) => {
-        const rowNum = tasks.indexOf(r) + 2; // actual sheet row (1-indexed + header)
-        const pass = r[14] || '1';
-        const consensus = r[16] || '';
-        const consensusBadge = consensus === 'agree'
-          ? '<span class="badge badge-green">agree</span>'
-          : consensus === 'disagree'
-          ? '<span class="badge badge-yellow">disagree</span>'
-          : '<span class="badge badge-gray">—</span>';
-        const isAlreadyFlagged = r[7] === 'Yes';
-        const batteryIdSafe = r[0].replace(/'/g, "\'");
-        return `<tr>
+    document.getElementById('recent-tbody').innerHTML = recent.length
+      ? recent.map(r => `<tr>
           <td style="font-family:var(--mono);font-size:12px">${r[0]}</td>
-          <td><span class="badge ${pass === '2' ? 'badge-yellow' : 'badge-gray'}">${pass === '2' ? '2nd' : '1st'}</span></td>
-          <td>${r[1] || '—'}</td>
-          <td>${r[2] || '—'}</td>
-          <td>${r[3] || '—'}</td>
-          <td>${isAlreadyFlagged ? '<span class="badge badge-yellow">Yes</span>' : '<span class="badge badge-gray">No</span>'}</td>
-          <td>${consensusBadge}</td>
-          <td style="font-size:12px;color:var(--text-muted)">${r[8] || '—'}</td>
-          <td style="font-family:var(--mono);font-size:12px">${formatSeconds(parseInt(r[12]))}</td>
-          <td>${pass === '1' && !isAlreadyFlagged
-            ? `<button class="btn-ghost" style="display:inline-block;padding:3px 10px;font-size:10px;color:var(--warn);border-color:rgba(245,166,35,0.3)" onclick="flagTask(${rowNum}, this)">⚑ Flag</button>`
-            : '<span style="color:var(--text-dim);font-size:11px;font-family:var(--mono)">—</span>'
-          }</td>
-        </tr>`;
-      }).join('');
-    }
+          <td>${r[1]||'—'}</td>
+          <td>${r[2]||'—'}</td>
+          <td>${r[3]||'—'}</td>
+          <td style="color:${r[7]==='Yes'?'var(--warn)':'var(--text-muted)'}">${r[7]||'No'}</td>
+          <td style="font-family:var(--mono);font-size:12px">${(r[8]||'').split('@')[0]}</td>
+          <td style="font-family:var(--mono);font-size:12px">${fmtTime(parseInt(r[12]))}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:24px">No completions yet</td></tr>';
 
   } catch(e) {
-    showToast('Error loading dashboard: ' + e.message, 'error');
+    showToast('Dashboard error: ' + e.message, 'error');
     console.error(e);
   }
   setLoading(false);
 }
 
-// Export
+// ── Export ────────────────────────────────────────────────────────
 async function exportToExcel() {
-  setLoading(true, 'Exporting data...');
+  setLoading(true, 'Exporting…');
   try {
-    const data = await sheetsGet(`${SHEETS.TASKS}!A:N`);
-    const rows = data.values || [];
-    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const [tData, aData] = await Promise.all([
+      sheetsGet(`${SHEETS.TASKS}!A:N`),
+      sheetsGet(`${SHEETS.ANNOTATORS}!A:D`)
+    ]);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Annotations');
-    XLSX.writeFile(wb, `battery_annotations_${new Date().toISOString().slice(0,10)}.xlsx`);
-    showToast('Export complete!');
-  } catch(e) {
-    showToast('Export failed: ' + e.message, 'error');
-  }
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tData.values || []), 'Tasks');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aData.values || []), 'Annotators');
+    XLSX.writeFile(wb, `battery_labeling_export_${new Date().toISOString().slice(0,10)}.xlsx`);
+    showToast('Exported successfully');
+  } catch(e) { showToast('Export failed: ' + e.message, 'error'); }
   setLoading(false);
 }
 
-// Import Excel
-async function importExcel(file) {
-  setLoading(true, 'Importing data...');
-  try {
-    const ab = await file.arrayBuffer();
-    const wb = XLSX.read(ab);
-    const skip = ['Overall', 'Helper', 'Label Template'];
-    let allRows = [];
-    for (const sheetName of wb.SheetNames) {
-      if (skip.some(s => sheetName.toLowerCase().includes(s.toLowerCase()))) continue;
-      const ws = wb.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-      if (rows.length < 2) continue;
-      // Skip header row, take battery IDs from column A
-      for (let i = 1; i < rows.length; i++) {
-        const batteryId = rows[i][0];
-        if (batteryId && String(batteryId).trim()) {
-          allRows.push([String(batteryId).trim(), '', '', '', '', '', '', '', '', 'unassigned', '', '', '', sheetName]);
-        }
-      }
-    }
-
-    if (allRows.length === 0) { showToast('No data rows found', 'error'); setLoading(false); return; }
-
-    // Write header + all rows
-    const header = [['battery_id','label','sublabel','lfp','evidence','evidence_url','text_logo_visible','needs_review','assigned_to','status','assigned_at','submitted_at','time_taken_seconds','source_sheet']];
-    await sheetsUpdate(`${SHEETS.TASKS}!A1`, header);
-    await sheetsAppend(`${SHEETS.TASKS}!A:N`, allRows);
-    showToast(`Imported ${allRows.length} rows from ${wb.SheetNames.length - skip.length} sheets`);
-    await loadAdminDashboard();
-  } catch(e) {
-    showToast('Import failed: ' + e.message, 'error');
-    console.error(e);
-  }
-  setLoading(false);
-}
-
-// ═══════════════════════════════════════════════
-// AUTH
-// ═══════════════════════════════════════════════
-function initGoogleAuth() {
-  initTokenClient();
-}
-
-async function signInWithOAuth() {
-  // Trigger the token client directly — this is the correct modern approach
-  // The button click handler calls this, which opens Google's account picker
-  window._tokenClient.requestAccessToken({ prompt: 'select_account' });
-}
-
+// ── Auth ──────────────────────────────────────────────────────────
 function initTokenClient() {
-  window._tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CONFIG.CLIENT_ID,
-    scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
-    callback: async (resp) => {
-      if (resp.error) {
-        showToast('Sign in error: ' + resp.error, 'error');
-        return;
-      }
+  window._tc = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope:     SCOPES,
+    callback:  async (resp) => {
+      if (resp.error) { showToast('Sign-in error: ' + resp.error, 'error'); return; }
       state.accessToken = resp.access_token;
-
-      // Schedule silent token refresh every 45 minutes
-      clearInterval(window._tokenRefreshInterval);
-      window._tokenRefreshInterval = setInterval(async () => {
-        try {
-          await new Promise((resolve, reject) => {
-            const orig = window._tokenClient.callback;
-            window._tokenClient.callback = (r) => {
-              window._tokenClient.callback = orig;
-              if (r.error) reject(new Error(r.error));
-              else { state.accessToken = r.access_token; resolve(); }
-            };
-            window._tokenClient.requestAccessToken({ prompt: '' });
-          });
-          console.log('Token silently refreshed');
-        } catch(e) { console.warn('Silent refresh failed:', e); }
-      }, 45 * 60 * 1000);
-
-      // If already signed in (token refresh), skip sign-in flow
+      // Auto-refresh every 45 min
+      clearInterval(window._refreshInt);
+      window._refreshInt = setInterval(() => refreshToken().catch(() => {}), 45 * 60 * 1000);
       if (state.user) return;
-
       let info;
       try {
-        const res = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
-          headers: { Authorization: 'Bearer ' + resp.access_token }
-        });
-        info = await res.json();
-        if (!info.email) throw new Error('No email returned from Google');
+        const r = await fetch('https://openidconnect.googleapis.com/v1/userinfo', { headers: { Authorization: 'Bearer ' + resp.access_token } });
+        info = await r.json();
+        if (!info.email) throw new Error('No email returned');
       } catch(e) { showToast('Could not get user info: ' + e.message, 'error'); return; }
-
-      // Load config — soft failure, falls back to defaults
-      try { await loadConfig(resp.access_token); }
-      catch(e) { console.warn('Config load failed, using defaults:', e.message); }
-
-      // Sign in
-      try { await signInUser(info.email, info.name || info.email); }
-      catch(e) { showToast('Sign-in error: ' + e.message, 'error'); }
-
+      try { await loadConfig(resp.access_token); } catch(e) { console.warn('Config load failed:', e.message); }
+      await signInUser(info.email, info.name || info.email);
     }
   });
 }
 
-async function signInWithEmail(email) {
-  // Email-only mode — no real auth, just use as identifier
-  // For real deployments, pair with OAuth above
-  await signInUser(email, email.split('@')[0]);
-}
-
 async function signInUser(email, name) {
-  state.user = { email, name };
-  // APP_CONFIG already loaded by token callback; isAdmin uses live config
+  state.user    = { email, name };
   state.isAdmin = CONFIG.ADMIN_EMAILS.includes(email);
-
   document.getElementById('header-email').textContent = email;
   document.getElementById('header-email').style.display = '';
   document.getElementById('btn-logout').style.display = '';
-
-  if (state.isAdmin) {
-    document.getElementById('btn-admin-toggle').style.display = '';
-  }
-
-  if (!state.accessToken) {
-    // Prompt for OAuth if not already done
-    await signInWithOAuth();
-    return;
-  }
-
-  try {
-    await ensureSheets();
-  } catch(e) {
-    showToast(e.message, 'error');
-    console.error('ensureSheets failed:', e);
-    signOut();
-    return;
-  }
-
-  // Register annotator in sheet on sign-in so they appear in admin immediately
-  if (!state.isAdmin) {
-    await registerAnnotatorIfNew(email);
-  }
-
-  if (state.isAdmin) {
-    await loadAdminDashboard();
-    showScreen('admin');
-  } else {
-    await loadNextTask();
-  }
-}
-
-// ═══════════════════════════════════════════════
-// MANUAL FLAG (admin)
-// ═══════════════════════════════════════════════
-async function flagTask(rowNum, btn) {
-  try {
-    btn.disabled = true;
-    btn.textContent = '...';
-    // Set needs_review = Yes (col H = index 7, col H is position 8 in sheet)
-    await sheetsUpdate(`${SHEETS.TASKS}!H${rowNum}`, [['Yes']]);
-    // If not already queued for second pass, create the pass-2 row
-    const data = await sheetsGet(`${SHEETS.TASKS}!A${rowNum}:Q${rowNum}`);
-    const row = (data.values || [[]])[0];
-    const batteryId = row[0];
-    const sourceSheet = row[13] || '';
-    const pass = row[14] || '1';
-    if (pass === '1') {
-      // Check pass-2 doesn't already exist
-      const allData = await sheetsGet(`${SHEETS.TASKS}!A:Q`);
-      const allRows = (allData.values || []).slice(1);
-      const alreadyQueued = allRows.some(r => r[0] === batteryId && r[14] === '2');
-      if (!alreadyQueued) {
-        await sheetsAppend(`${SHEETS.TASKS}!A:Q`, [[
-          batteryId, '', '', '', '', '', '', '', '', 'unassigned', '', '', '', sourceSheet,
-          '2', rowNum, ''
-        ]]);
-      }
-    }
-    btn.textContent = '✓ Flagged';
-    btn.style.color = 'var(--accent)';
-    showToast(`Flagged — 2nd pass queued for ${batteryId}`);
-    await loadAdminDashboard();
-  } catch(e) {
-    btn.disabled = false;
-    btn.textContent = '⚑ Flag';
-    showToast('Flag failed: ' + e.message, 'error');
-  }
-}
-
-// ═══════════════════════════════════════════════
-// ADMIN MANAGEMENT
-// ═══════════════════════════════════════════════
-function renderAdminList() {
-  const list = document.getElementById('admin-list');
-  list.innerHTML = CONFIG.ADMIN_EMAILS.map(email => `
-    <span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:4px 10px;font-family:var(--mono);font-size:11px;color:var(--text-muted);">
-      ${email}
-      ${email !== state.user.email ? `<button onclick="removeAdmin('${email}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;line-height:1;padding:0 0 0 4px;" title="Remove">✕</button>` : '<span style="color:var(--accent);font-size:10px;margin-left:2px;">(you)</span>'}
-    </span>`).join('');
-}
-
-function removeAdmin(email) {
-  if (email === state.user.email) { showToast("You can't remove yourself", 'error'); return; }
-  CONFIG.ADMIN_EMAILS = CONFIG.ADMIN_EMAILS.filter(e => e !== email);
-  saveConfig();
-  renderAdminList();
-  showToast(`Removed ${email}`);
-}
-
-function addAdmin(email) {
-  email = email.trim().toLowerCase();
-  if (!email || !email.includes('@')) { showToast('Enter a valid email', 'error'); return; }
-  if (CONFIG.ADMIN_EMAILS.includes(email)) { showToast('Already an admin', 'error'); return; }
-  CONFIG.ADMIN_EMAILS.push(email);
-  saveConfig();
-  renderAdminList();
-  document.getElementById('input-new-admin').value = '';
-  showToast(`Added ${email} as admin`);
+  if (state.isAdmin) document.getElementById('btn-admin-toggle').style.display = '';
+  if (state.isAdmin) { await loadAdminDashboard(); showScreen('admin'); }
+  else await loadNextTask();
 }
 
 function signOut() {
-  state.user = null;
-  state.accessToken = null;
-  state.currentTask = null;
-  stopTimer();
+  state.user = null; state.accessToken = null; state.currentTask = null;
+  clearInterval(state.timerInterval);
   document.getElementById('header-email').style.display = 'none';
-  document.getElementById('btn-logout').style.display = 'none';
+  document.getElementById('btn-logout').style.display   = 'none';
   document.getElementById('btn-admin-toggle').style.display = 'none';
   showScreen('login');
 }
 
+// ── UI utils ──────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show ' + type;
+  clearTimeout(t._t); t._t = setTimeout(() => t.className = '', 3200);
+}
+function setLoading(show, text = 'Loading…') {
+  document.getElementById('loading-text').textContent = text;
+  document.getElementById('loading-overlay').classList.toggle('active', show);
+}
 
-const EVIDENCE_TEMPLATES = [
-  { group: 'Direct evidence', label: 'Text visible', text: 'The presence of visible [chemistry] text in [cam].jpg provides sufficient evidence.' },
-  { group: 'Direct evidence', label: 'Logo visible', text: 'The presence of visible [chemistry] recycling logo in [cam].jpg provides sufficient evidence.' },
-  { group: 'Direct evidence', label: '3. Voltage / mAh indicator', text: '[voltage/mAh] visible in [cam].jpg indicating [chemistry]. Product [confirmed/unconfirmed]. URL added below.' },
-  { group: 'Web search', label: '4. Web search — chemistry clear', text: '[brand/part number] visible in [cam].jpg. Web search confirms [chemistry]. URL added below.' },
-  { group: 'Web search', label: '5. Web search — chemistry unclear', text: '[product] found online. Available in [chemistry 1] and [chemistry 2] variants. Chemistry unconfirmed — marked for review.' },
-  { group: 'Multiple batteries', label: '6. Multiple batteries — same chemistry', text: 'Multiple batteries in image. All identified to be of [chemistry]; Logo/text visible on [cam].jpg.' },
-  { group: 'Multiple batteries', label: '7. Multiple batteries — different chemistry', text: 'Multiple batteries visible in image with different compositions: [chemistry 1] on [cam].jpg and [chemistry 2] on [cam].jpg. Cannot confirm single label — marked as unknown.' },
-  { group: 'Unknown / errors', label: '8. Unknown / cannot confirm', text: 'Unable to confirm battery type. [label obscured / distorted image / no visible markings].' },
-  { group: 'Unknown / errors', label: '9. Data error — non-battery item', text: 'Data error — non-battery item in image. Marked as data error.' },
-  { group: 'Unknown / errors', label: '10. Data error — product missing', text: 'Data error — product missing in [cam].jpg. Marked as data error.' },
-  { group: 'Unknown / errors', label: '11. Data error — product mismatch', text: 'Data error — product in [cam] differs from other images in dataset. Marked as data error.' },
+// ── Templates ─────────────────────────────────────────────────────
+const TEMPLATES = [
+  { group:'Direct evidence',    label:'Text visible',                   text:'The presence of visible [chemistry] text in [cam].jpg provides sufficient evidence.' },
+  { group:'Direct evidence',    label:'Logo visible',                   text:'The presence of visible [chemistry] recycling logo in [cam].jpg provides sufficient evidence.' },
+  { group:'Direct evidence',    label:'Voltage / mAh indicator',        text:'[voltage/mAh] visible in [cam].jpg indicating [chemistry]. Product [confirmed/unconfirmed]. URL added below.' },
+  { group:'Web search',         label:'Web search — chemistry clear',   text:'[brand/part number] visible in [cam].jpg. Web search confirms [chemistry]. URL added below.' },
+  { group:'Web search',         label:'Web search — chemistry unclear', text:'[product] found online. Available in [chemistry 1] and [chemistry 2] variants. Chemistry unconfirmed — marked for review.' },
+  { group:'Multiple batteries', label:'Multiple — same chemistry',      text:'Multiple batteries in image. All identified to be of [chemistry]; Logo/text visible on [cam].jpg.' },
+  { group:'Multiple batteries', label:'Multiple — different chemistry', text:'Multiple batteries visible in image with different compositions: [chemistry 1] on [cam].jpg and [chemistry 2] on [cam].jpg. Cannot confirm single label — marked as unknown.' },
+  { group:'Unknown / errors',   label:'Unknown / cannot confirm',       text:'Unable to confirm battery type. [label obscured / distorted image / no visible markings].' },
+  { group:'Unknown / errors',   label:'Data error — non-battery item',  text:'Data error — non-battery item in image. Marked as data error.' },
+  { group:'Unknown / errors',   label:'Data error — product missing',   text:'Data error — product missing in [cam].jpg. Marked as data error.' },
+  { group:'Unknown / errors',   label:'Data error — product mismatch',  text:'Data error — product in [cam] differs from other images in dataset. Marked as data error.' },
 ];
 
 function buildTemplateHTML() {
-  const groups = [...new Set(EVIDENCE_TEMPLATES.map(t => t.group))];
-  let html = '<option value="">+ Insert template...</option>';
+  const groups = [...new Set(TEMPLATES.map(t => t.group))];
+  let html = '<option value="">+ Insert template…</option>';
   groups.forEach(g => {
     html += `<optgroup label="${g}">`;
-    EVIDENCE_TEMPLATES.filter(t => t.group === g).forEach(t => {
-      html += `<option value="${t.text.replace(/"/g, '&quot;')}">${t.label}</option>`;
+    TEMPLATES.filter(t => t.group === g).forEach(t => {
+      html += `<option value="${t.text.replace(/"/g,'&quot;')}">${t.label}</option>`;
     });
     html += '</optgroup>';
   });
   return html;
 }
 
-function attachTemplateDropdown(selectId, textareaId) {
-  const sel = document.getElementById(selectId);
-  const box = document.getElementById(textareaId);
-  if (!sel || !box) return;
+// ── Init ──────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initTokenClient();
+  showScreen('login');
+
+  // Template dropdown
+  const sel = document.getElementById('template-select');
   sel.innerHTML = buildTemplateHTML();
   sel.addEventListener('change', () => {
     if (!sel.value) return;
-    box.value = sel.value;
-    box.focus();
+    document.getElementById('field-evidence').value = sel.value;
+    document.getElementById('field-evidence').focus();
+    document.getElementById('template-hint').style.display = sel.value.includes('[') ? 'block' : 'none';
     sel.value = '';
   });
-}
 
-// ═══════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', async () => {
-  initGoogleAuth();
-  showScreen('login');
-
-  // Setup save
-  document.getElementById('btn-save-setup').addEventListener('click', () => {
-    const cid = document.getElementById('input-client-id').value.trim();
-    const sid = document.getElementById('input-sheet-id').value.trim();
-    const admins = document.getElementById('input-admins').value.split(',').map(e => e.trim()).filter(Boolean);
-    if (!cid || !sid) { showToast('Client ID and Sheet ID are required', 'error'); return; }
-    CONFIG.CLIENT_ID = cid;
-    CONFIG.SHEET_ID = sid;
-    CONFIG.ADMIN_EMAILS = admins;
-    saveConfig();
-    initGoogleAuth();
-    showScreen('login');
-    showToast('Configuration saved!');
-  });
-
-  // Login
-  document.getElementById('btn-google-signin').addEventListener('click', () => {
-    signInWithOAuth();
-  });
-
-  // Logout
+  // Sign in / out
+  document.getElementById('btn-signin').addEventListener('click', () => window._tc.requestAccessToken({ prompt: 'select_account' }));
   document.getElementById('btn-logout').addEventListener('click', signOut);
+  document.getElementById('btn-signin-again').addEventListener('click', () => showScreen('login'));
 
-  // Admin toggle
+  // Label conditional logic
+  document.getElementById('field-label').addEventListener('change', e => {
+    const isLi = e.target.value === 'Lithium';
+    document.getElementById('lithium-fields').classList.toggle('visible', isLi);
+    if (!isLi) { document.getElementById('field-sublabel').value = ''; document.getElementById('field-lfp').value = ''; document.getElementById('lfp-field').classList.remove('visible'); }
+  });
+  document.getElementById('field-sublabel').addEventListener('change', e => {
+    const needsLfp = ['Li-ion','Solid-state'].includes(e.target.value);
+    document.getElementById('lfp-field').classList.toggle('visible', needsLfp);
+    if (!needsLfp) document.getElementById('field-lfp').value = '';
+  });
+
+  // Submit
+  document.getElementById('btn-submit').addEventListener('click', () => handleSubmit(false));
+  document.getElementById('btn-submit-stop').addEventListener('click', () => handleSubmit(true));
+
+  // Admin
   document.getElementById('btn-admin-toggle').addEventListener('click', () => {
-    const adminScreen = document.getElementById('screen-admin');
-    const isOnAdmin = adminScreen.classList.contains('active');
-    if (isOnAdmin) {
-      loadNextTask();
-    } else {
-      loadAdminDashboard();
-      showScreen('admin');
-    }
+    if (document.getElementById('screen-admin').classList.contains('active')) { loadNextTask(); }
+    else { loadAdminDashboard(); showScreen('admin'); }
   });
-
-  // Form conditional logic
-  document.getElementById('field-label').addEventListener('change', (e) => {
-    const isLithium = e.target.value === 'Lithium';
-    document.getElementById('lithium-fields').classList.toggle('visible', isLithium);
-    if (!isLithium) {
-      document.getElementById('field-sublabel').value = '';
-      document.getElementById('field-lfp').value = '';
-      document.getElementById('lfp-field').classList.remove('visible');
-    }
-  });
-
-  document.getElementById('field-sublabel').addEventListener('change', (e) => {
-    const showLFP = e.target.value === 'Li-ion' || e.target.value === 'Solid-state';
-    document.getElementById('lfp-field').classList.toggle('visible', showLFP);
-    if (!showLFP) document.getElementById('field-lfp').value = '';
-  });
-
-
-  // Template dropdown
-  document.getElementById('template-select').addEventListener('change', (e) => {
-    if (!e.target.value) return;
-    document.getElementById('field-evidence').value = e.target.value;
-    document.getElementById('field-evidence').focus();
-    const hint = document.getElementById('template-hint');
-    hint.style.display = e.target.value.includes('[') ? 'block' : 'none';
-    e.target.value = '';
-  });
-
-  // Submit / submit & stop
-  attachTemplateDropdown('template-select', 'field-evidence');
-  document.getElementById('btn-submit').addEventListener('click', handleSubmit);
-  document.getElementById('btn-submit-stop').addEventListener('click', handleSubmitAndStop);
-  document.getElementById('btn-signin-again').addEventListener('click', () => { showScreen('login'); });
-
-  // Admin actions
+  document.getElementById('btn-refresh').addEventListener('click', loadAdminDashboard);
   document.getElementById('btn-export').addEventListener('click', exportToExcel);
-  document.getElementById('btn-refresh').addEventListener('click', () => loadAdminDashboard());
-  document.getElementById('btn-manage-admins').addEventListener('click', () => {
-    const panel = document.getElementById('admin-mgmt-panel');
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-    if (panel.style.display === 'block') renderAdminList();
-  });
-  document.getElementById('btn-close-admin-mgmt').addEventListener('click', () => {
-    document.getElementById('admin-mgmt-panel').style.display = 'none';
-  });
-  document.getElementById('btn-add-admin').addEventListener('click', () => {
-    addAdmin(document.getElementById('input-new-admin').value);
-  });
-  document.getElementById('input-new-admin').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') addAdmin(document.getElementById('input-new-admin').value);
-  });
-  document.getElementById('btn-import').addEventListener('click', () => {
-    document.getElementById('input-import').click();
-  });
-  document.getElementById('input-import').addEventListener('change', (e) => {
-    if (e.target.files[0]) importExcel(e.target.files[0]);
-  });
 });
 </script>
 </body>
