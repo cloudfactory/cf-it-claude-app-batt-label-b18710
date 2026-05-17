@@ -228,7 +228,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <h2>Admin Dashboard</h2>
     <div class="admin-btn-row">
       <button class="btn-secondary" id="btn-refresh">↻ Refresh</button>
-      <button class="btn-primary" id="btn-export">↓ Export to Excel</button>
+      <button class="btn-secondary" id="btn-config">⚙ Config sheet</button>
+      <button class="btn-secondary" id="btn-data-sheet">⬡ Data sheet</button>
+      <button class="btn-secondary" id="btn-init-sheet">⊕ Initialize sheet</button>
     </div>
   </div>
 
@@ -275,13 +277,16 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <script>
 // ── Config ──────────────────────────────────────────────────────
 const CONFIG_SHEET_ID = '1axlYSB3d5H0tDO4M_UA73QmKUY60xkzTrUi2Wfz1cls';
 const CLIENT_ID       = '92798755923-ah1qkitovkkq4qcs53rv6srpu86106lk.apps.googleusercontent.com';
 const SCOPES          = 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
-const SHEETS          = { TASKS: 'tasks', ANNOTATORS: 'annotators' };
+// Assumes tasks and annotators tabs exist with correct headers.
+// To reset a batch: duplicate the sheet, then clear all data rows (keep row 1).
+// To initialize a fresh sheet: use the "Initialize sheet" button in the admin dashboard.
+const SHEETS = { TASKS: 'tasks', ANNOTATORS: 'annotators' };
 
 const CONFIG_DEFAULTS = {
   admin_emails:     'ayush.siddhi@cloudfactory.com, robina@cloudfactory.com',
@@ -376,17 +381,20 @@ async function getOrAssignTask(email) {
   const rows = data.values || [];
   if (rows.length < 2) return null;
 
+  const totalTasks = rows.length - 1;
+  const myCompleted = rows.slice(1).filter(r => r[8] === email && r[9] === 'complete').length;
+
   // Resume in-progress
   for (let i = 1; i < rows.length; i++) {
     if (rows[i][8] === email && rows[i][9] === 'in-progress')
-      return { rowIndex: i + 1, batteryId: rows[i][0] };
+      return { rowIndex: i + 1, batteryId: rows[i][0], totalTasks, myCompleted };
   }
   // Assign next unassigned
   for (let i = 1; i < rows.length; i++) {
     if (!rows[i][9] || rows[i][9] === 'unassigned') {
       const rowNum = i + 1;
       await sheetsUpdate(`${SHEETS.TASKS}!I${rowNum}:K${rowNum}`, [[email, 'in-progress', new Date().toISOString()]]);
-      return { rowIndex: rowNum, batteryId: rows[i][0] };
+      return { rowIndex: rowNum, batteryId: rows[i][0], totalTasks, myCompleted };
     }
   }
   return null;
@@ -475,28 +483,15 @@ async function loadNextTask() {
     state.currentTask = task;
     resetForm();
     document.getElementById('display-battery-id').textContent = task.batteryId;
-    await updateUserProgress();
+    // Update progress from data already returned — no extra API calls
+    const pct = task.totalTasks ? Math.round(task.myCompleted / task.totalTasks * 100) : 0;
+    document.getElementById('user-progress-bar').style.width = pct + '%';
+    document.getElementById('user-progress-count').textContent = `${task.myCompleted} completed`;
     startTimer();
   } catch(e) {
     showToast('Error loading task: ' + e.message, 'error');
   }
   setLoading(false);
-}
-
-async function updateUserProgress() {
-  try {
-    const data = await sheetsGet(`${SHEETS.ANNOTATORS}!A:B`);
-    const rows = (data.values || []).slice(1);
-    const myRow = rows.find(r => r[0] === state.user.email);
-    const completed = myRow ? parseInt(myRow[1]) || 0 : 0;
-    const total = await (async () => {
-      const d = await sheetsGet(`${SHEETS.TASKS}!A:A`);
-      return Math.max((d.values || []).length - 1, 0);
-    })();
-    const pct = total ? Math.round(completed / total * 100) : 0;
-    document.getElementById('user-progress-bar').style.width = pct + '%';
-    document.getElementById('user-progress-count').textContent = `${completed} completed`;
-  } catch(e) { /* non-critical */ }
 }
 
 // ── Submit handlers ───────────────────────────────────────────────
@@ -610,22 +605,7 @@ async function loadAdminDashboard() {
   setLoading(false);
 }
 
-// ── Export ────────────────────────────────────────────────────────
-async function exportToExcel() {
-  setLoading(true, 'Exporting…');
-  try {
-    const [tData, aData] = await Promise.all([
-      sheetsGet(`${SHEETS.TASKS}!A:N`),
-      sheetsGet(`${SHEETS.ANNOTATORS}!A:D`)
-    ]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tData.values || []), 'Tasks');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aData.values || []), 'Annotators');
-    XLSX.writeFile(wb, `battery_labeling_export_${new Date().toISOString().slice(0,10)}.xlsx`);
-    showToast('Exported successfully');
-  } catch(e) { showToast('Export failed: ' + e.message, 'error'); }
-  setLoading(false);
-}
+
 
 // ── Auth ──────────────────────────────────────────────────────────
 function initTokenClient() {
@@ -660,6 +640,53 @@ async function signInUser(email, name) {
   if (state.isAdmin) document.getElementById('btn-admin-toggle').style.display = '';
   if (state.isAdmin) { await loadAdminDashboard(); showScreen('admin'); }
   else await loadNextTask();
+}
+
+async function initializeSheet() {
+  if (!confirm("This will create the tasks and annotators tabs with correct headers if they don't exist. Safe to run on a fresh sheet. Continue?")) return;
+  setLoading(true, 'Checking sheet structure…');
+  try {
+    // Read sheet metadata
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}`, {
+      headers: { Authorization: 'Bearer ' + state.accessToken }
+    });
+    const meta = await res.json();
+    if (!meta.sheets) throw new Error('Could not access sheet — check sharing settings');
+
+    const existing = meta.sheets.map(s => s.properties.title);
+    const toCreate = [];
+    if (!existing.includes(SHEETS.TASKS))      toCreate.push({ addSheet: { properties: { title: SHEETS.TASKS } } });
+    if (!existing.includes(SHEETS.ANNOTATORS)) toCreate.push({ addSheet: { properties: { title: SHEETS.ANNOTATORS } } });
+
+    if (toCreate.length) {
+      setLoading(true, `Creating ${toCreate.length} tab(s)…`);
+      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}:batchUpdate`, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requests: toCreate })
+      });
+    }
+
+    // Write headers if tabs were just created or are empty
+    const tData = await sheetsGet(`${SHEETS.TASKS}!A1:N1`);
+    if (!(tData.values || []).length) {
+      await sheetsUpdate(`${SHEETS.TASKS}!A1`, [[
+        'battery_id','label','sublabel','lfp','evidence','evidence_url',
+        'text_logo_visible','needs_review','assigned_to','status',
+        'assigned_at','submitted_at','time_taken_seconds','source_sheet'
+      ]]);
+    }
+    const aData = await sheetsGet(`${SHEETS.ANNOTATORS}!A1:D1`);
+    if (!(aData.values || []).length) {
+      await sheetsUpdate(`${SHEETS.ANNOTATORS}!A1`, [['email','completed','total_time_seconds','last_active']]);
+    }
+
+    showToast(toCreate.length ? `Created ${toCreate.length} tab(s) and wrote headers` : 'Sheet already initialized — nothing to do');
+  } catch(e) {
+    showToast('Initialize failed: ' + e.message, 'error');
+    console.error(e);
+  }
+  setLoading(false);
 }
 
 function signOut() {
@@ -757,7 +784,12 @@ document.addEventListener('DOMContentLoaded', () => {
     else { loadAdminDashboard(); showScreen('admin'); }
   });
   document.getElementById('btn-refresh').addEventListener('click', loadAdminDashboard);
-  document.getElementById('btn-export').addEventListener('click', exportToExcel);
+  document.getElementById('btn-config').addEventListener('click', () =>
+    window.open(`https://docs.google.com/spreadsheets/d/${CONFIG_SHEET_ID}/edit`, '_blank'));
+  document.getElementById('btn-data-sheet').addEventListener('click', () =>
+    window.open(`https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/edit`, '_blank'));
+  document.getElementById('btn-init-sheet').addEventListener('click', initializeSheet);
+
 });
 </script>
 </body>
