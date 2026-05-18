@@ -381,30 +381,11 @@
         <div style="display:flex;gap:10px">
           <button class="btn-ghost" id="btn-refresh" style="display:inline-block">↻ Refresh</button>
           <button class="btn-ghost" id="btn-send-all" style="display:inline-block">✉ Send Results to All</button>
-          <button class="btn-ghost" id="btn-manage-admins" style="display:inline-block">⚙ Admins</button>
           <button class="btn-primary" id="btn-export">↓ Export Results</button>
         </div>
       </div>
 
       <!-- Admin Management Panel -->
-      <div id="admin-mgmt-panel" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px;margin-bottom:24px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <span style="font-family:var(--mono);font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);">Manage Admins</span>
-          <button class="btn-ghost" id="btn-close-admin-mgmt" style="display:inline-block;padding:3px 10px;font-size:10px;">✕ Close</button>
-        </div>
-        <div id="admin-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;min-height:32px;"></div>
-        <div style="display:flex;gap:8px;">
-          <input type="email" id="input-new-admin" placeholder="new.admin@cloudfactory.com" style="flex:1;font-size:13px;" />
-          <button class="btn-primary" id="btn-add-admin" style="white-space:nowrap;">+ Add Admin</button>
-        </div>
-        <p style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:8px;">Changes take effect immediately. You cannot remove yourself.</p>
-      </div>
-
-      <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
-        <div class="stat-card">
-          <div class="stat-label">Total Assessed</div>
-          <div class="stat-value" id="stat-total">—</div>
-        </div>
         <div class="stat-card">
           <div class="stat-label">Avg Score</div>
           <div class="stat-value" id="stat-avg">—</div>
@@ -458,7 +439,6 @@
 
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -645,15 +625,6 @@ async function sheetsUpdate(range, values) {
   return data;
 }
 
-async function sheetsBatchUpdate(requests) {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}:batchUpdate`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ requests })
-  });
-  return res.json();
-}
 
 async function refreshToken() {
   return new Promise((resolve, reject) => {
@@ -694,7 +665,13 @@ async function ensureSheets() {
   if (!existing.includes(SHEETS.RESPONSES)) toCreate.push({ addSheet: { properties: { title: SHEETS.RESPONSES } } });
   if (!existing.includes(SHEETS.ANNOTATORS)) toCreate.push({ addSheet: { properties: { title: SHEETS.ANNOTATORS } } });
   if (toCreate.length) {
-    await sheetsBatchUpdate(toCreate);
+    await (async()=>{
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}:batchUpdate`,{
+        method:'POST', headers:{Authorization:'Bearer '+state.accessToken,'Content-Type':'application/json'},
+        body: JSON.stringify({requests: toCreate})
+      });
+      return res.json();
+    })();
     if (!existing.includes(SHEETS.RESPONSES)) {
       await sheetsUpdate(`${SHEETS.RESPONSES}!A1`, [[
         'email', 'battery_id', 'label_answer', 'sublabel_answer', 'lfp_answer',
@@ -840,7 +817,6 @@ async function submitAssessment() {
 
   try {
     // Write all responses to sheet
-    console.log('Writing', scored.length, 'response rows to sheet...');
     const responseRows = scored.map(s => [
       state.user.email,
       s.batteryId,
@@ -858,7 +834,6 @@ async function submitAssessment() {
       s.max
     ]);
     const appendRes = await sheetsAppend(`${SHEETS.RESPONSES}!A:N`, responseRows);
-    console.log('Responses append result:', JSON.stringify(appendRes));
 
     const summaryRes = await sheetsAppend(`${SHEETS.ANNOTATORS}!A:H`, [[
       state.user.email,
@@ -870,7 +845,6 @@ async function submitAssessment() {
       new Date().toISOString(),
       'complete'
     ]]);
-    console.log('Summary append result:', JSON.stringify(summaryRes));
 
     if (appendRes.error || summaryRes.error) {
       throw new Error(appendRes.error?.message || summaryRes.error?.message || 'Sheet write failed');
@@ -1096,27 +1070,6 @@ async function sendAllResults() {
   showToast(`Sent ${sent} emails${failed > 0 ? `, ${failed} failed` : ''}`, 'success');
 }
 
-async function exportResults() {
-  setLoading(true, 'Exporting...');
-  try {
-    const [summaryData, responseData] = await Promise.all([
-      sheetsGet(`${SHEETS.ANNOTATORS}!A:H`),
-      sheetsGet(`${SHEETS.RESPONSES}!A:N`)
-    ]);
-
-    const wb = XLSX.utils.book_new();
-    const ws1 = XLSX.utils.aoa_to_sheet(summaryData.values || []);
-    const ws2 = XLSX.utils.aoa_to_sheet(responseData.values || []);
-    XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
-    XLSX.utils.book_append_sheet(wb, ws2, 'Detailed Responses');
-    XLSX.writeFile(wb, `assessment_results_${new Date().toISOString().slice(0,10)}.xlsx`);
-    showToast('Export complete!');
-  } catch(e) {
-    showToast('Export failed: ' + e.message, 'error');
-  }
-  setLoading(false);
-}
-
 // ═══════════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════════
@@ -1141,8 +1094,7 @@ function initTokenClient() {
             };
             window._tokenClient.requestAccessToken({ prompt: '' });
           });
-          console.log('Token silently refreshed');
-        } catch(e) { console.warn('Silent refresh failed:', e); }
+          } catch(e) { console.warn('Silent refresh failed:', e); }
       }, 45 * 60 * 1000);
 
       // If we already have a user (token refresh), skip sign-in flow
@@ -1189,7 +1141,6 @@ async function loadGroundTruth() {
       scoreVisible: r[4] === 'true' ? true : r[4] === 'false' ? false : null,
     }));
     if (GROUND_TRUTH.length === 0) throw new Error('Empty ground truth tab: ' + tab);
-    console.log(`Loaded ${GROUND_TRUTH.length} ground truth tasks from "${tab}"`);
   } catch(e) {
     showToast('Failed to load ground truth: ' + e.message, 'error');
     console.error(e);
@@ -1237,45 +1188,6 @@ async function signInUser(email, name) {
     signOut();
   }
   setLoading(false);
-}
-
-// ═══════════════════════════════════════════════
-// ADMIN MANAGEMENT
-// ═══════════════════════════════════════════════
-function renderAdminList() {
-  const list = document.getElementById('admin-list');
-  list.innerHTML = CONFIG.ADMIN_EMAILS.map(email => `
-    <span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:4px 10px;font-family:var(--mono);font-size:11px;color:var(--text-muted);">
-      ${email}
-      ${email !== state.user.email ? `<button onclick="removeAdmin('${email}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;line-height:1;padding:0 0 0 4px;" title="Remove">✕</button>` : '<span style="color:var(--accent);font-size:10px;margin-left:2px;">(you)</span>'}
-    </span>`).join('');
-}
-
-function removeAdmin(email) {
-  if (email === state.user.email) { showToast("You can\'t remove yourself", 'error'); return; }
-  CONFIG.ADMIN_EMAILS = CONFIG.ADMIN_EMAILS.filter(e => e !== email);
-  saveAdminConfig();
-  renderAdminList();
-  showToast(`Removed ${email}`);
-}
-
-function addAdmin(email) {
-  email = email.trim().toLowerCase();
-  if (!email || !email.includes('@')) { showToast('Enter a valid email', 'error'); return; }
-  if (CONFIG.ADMIN_EMAILS.includes(email)) { showToast('Already an admin', 'error'); return; }
-  CONFIG.ADMIN_EMAILS.push(email);
-  saveAdminConfig();
-  renderAdminList();
-  document.getElementById('input-new-admin').value = '';
-  showToast(`Added ${email} as admin`);
-}
-
-function saveAdminConfig() {
-  // Admin changes now go through config sheet directly
-}
-
-function loadAdminConfig() {
-  // No-op — admin emails loaded from remote config sheet after OAuth
 }
 
 // ═══════════════════════════════════════════════
@@ -1378,7 +1290,6 @@ function attachTemplateDropdown(selectId, textareaId) {
 // INIT
 // ═══════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  loadAdminConfig();
   initTokenClient();
   showScreen('login');
 
@@ -1416,27 +1327,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   attachTemplateDropdown('template-select', 'field-evidence');
   document.getElementById('btn-next').addEventListener('click', handleNext);
-  document.getElementById('btn-export').addEventListener('click', exportResults);
   document.getElementById('btn-refresh').addEventListener('click', loadAdminDashboard);
   document.getElementById('btn-send-all').addEventListener('click', async () => {
     if (confirm('Send results to all annotators who have completed the assessment?')) {
       await sendAllResults();
     }
   });
-  document.getElementById('btn-manage-admins').addEventListener('click', () => {
-    const panel = document.getElementById('admin-mgmt-panel');
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-    if (panel.style.display === 'block') renderAdminList();
-  });
-  document.getElementById('btn-close-admin-mgmt').addEventListener('click', () => {
-    document.getElementById('admin-mgmt-panel').style.display = 'none';
-  });
-  document.getElementById('btn-add-admin').addEventListener('click', () => {
-    addAdmin(document.getElementById('input-new-admin').value);
-  });
-  document.getElementById('input-new-admin').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') addAdmin(document.getElementById('input-new-admin').value);
-  });
+
 });
 </script>
 </body>
