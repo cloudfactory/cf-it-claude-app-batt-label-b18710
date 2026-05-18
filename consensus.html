@@ -803,6 +803,9 @@ async function seedConsensusQueue(){
     console.log('Seed debug — total rows:', (tData.values||[]).length-1,
       '| completed:', tRows.length,
       '| sample statuses:', (tData.values||[]).slice(1,4).map(r=>r[9]));
+    console.log('Seed debug — seeded set size:', seeded.size, '| seeded IDs:', [...seeded].slice(0,5));
+    console.log('Seed debug — byStratum:', JSON.stringify(Object.keys(byStratum).map(k=>({stratum:k,count:byStratum[k].length}))));
+    console.log('Seed debug — plan:', JSON.stringify(Object.entries(plan||{}).map(([k,v])=>({stratum:k,N:v.N,n:v.n}))));
 
     // Read existing consensus to find already-seeded battery IDs
     const cData=await sheetsGet(`${SHEETS.CONSENSUS}!A:A`);
